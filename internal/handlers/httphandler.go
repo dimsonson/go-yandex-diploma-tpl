@@ -97,17 +97,19 @@ func (hn Handler) HandlerNewOrderLoad(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	b := string(bs)
-	// проверяем на алгоритм Луна
+	// проверяем на алгоритм Луна, если не ок, возвращаем 422
 	err = goluhn.Validate(b)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	// получаем значение iserid из контекста запроса
+	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// проверяем пару логин:пароль в хранилище
 	err = hn.service.ServiceNewOrderLoad(tokenString["login"].(string), b)
-	// если логин существует и пароль ок возвращаем статус 200, если иная ошибка - 500, если пара неверна - 401
+	// если ордер существует от этого пользователя - статус 200, если иная ошибка - 500
+	// если от другого пользователя - 409
+	// если нет ошибок - 202
 	switch {
 	case err != nil && strings.Contains(err.Error(), "customer order already exist"):
 		w.WriteHeader(http.StatusOK)
