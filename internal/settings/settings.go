@@ -1,6 +1,10 @@
 package settings
 
-import "time"
+import (
+	"time"
+
+	"github.com/go-chi/jwtauth"
+)
 
 // длинна укороченной ссылки без первого слеш
 const KeyLeght int = 5 //значение должно быть больше 0
@@ -35,3 +39,5 @@ const (
 	ColorBlue   = "\u001b[34m"
 	ColorReset  = "\u001b[0m"
 )
+
+var TokenAuth *jwtauth.JWTAuth = jwtauth.New("HS256", []byte(SignKey), nil)
