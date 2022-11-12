@@ -1,25 +1,12 @@
 package httprouter
 
 import (
-	"fmt"
-
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth"
 )
-
-//var tokenAuth *jwtauth.JWTAuth = jwtauth.New("HS256", []byte(settings.SignKey), nil)
-
-func init() {
-//	tokenAuth = jwtauth.New("HS256", []byte(settings.SignKey), nil)
-
-	// For debugging/example purposes, we generate and print
-	// a sample jwt token with claims `user_id:123` here:
-	_, tokenString, _ := settings.TokenAuth.Encode(map[string]interface{}{"user_id": 123})
-	fmt.Printf("DEBUG: a sample jwt is %s\n\n", tokenString)
-}
 
 // маршрутизатор запросов
 func NewRouter(hn *handlers.Handler) chi.Router {
