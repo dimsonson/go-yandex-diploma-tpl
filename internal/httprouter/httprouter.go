@@ -23,10 +23,7 @@ func NewRouter(hn *handlers.Handler) chi.Router {
 	rout.Group(func(r chi.Router) {
 		// Seek, verify and validate JWT tokens
 		r.Use(jwtauth.Verifier(settings.TokenAuth))
-		// Handle valid / invalid tokens. In this example, we use
-		// the provided authenticator middleware, but you can write your
-		// own very easily, look at the Authenticator method in jwtauth.go
-		// and tweak it, its not scary.
+		// Handle valid / invalid tokens
 		r.Use(jwtauth.Authenticator)
 		// загрузка пользователем номера заказа для расчёта
 		r.Post("/api/user/orders", hn.HandlerNewOrderLoad)
@@ -43,9 +40,9 @@ func NewRouter(hn *handlers.Handler) chi.Router {
 
 	// Public routes
 	rout.Group(func(r chi.Router) {
-		// регистрация пользователя; HTTPзаголовок Authorization.
+		// регистрация пользователя: HTTPзаголовок Authorization
 		r.Post("/api/user/register", hn.HandlerNewUserReg)
-		// аутентификация пользователя
+		// аутентификация пользователя: HTTPзаголовок Authorization
 		r.Post("/api/user/login", hn.HandlerUserAuth)
 	})
 
