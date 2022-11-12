@@ -1,7 +1,11 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
+github.com/ShiraazMoollatjie/goluhn v0.0.0-20211017190329-0d86158c056a h1:NPnGVqpua4c1iEFVdxnBJA9viP5bo2Zp2jfflbcjdto=
+github.com/ShiraazMoollatjie/goluhn v0.0.0-20211017190329-0d86158c056a/go.mod h1:5LI6VqIHoGmWsR0EJLbct5bBrtM/0pTonaAyGKmFk9U=
 github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d h1:Byv0BzEl3/e6D5CLfI0j/7hiIEtvGVFPCZ7Ei2oq8iQ=
 github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
+github.com/calmh/luhn v2.0.0+incompatible h1:xHkbAc8FBgMiGUaKsiYcwtf8xhSXVtRKA2NhY7hFCAc=
+github.com/calmh/luhn v2.0.0+incompatible/go.mod h1:70IGmMi0GKRs073gl/oH5/yiJnTt61h35YQhvo/k3Cc=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
@@ -135,6 +139,8 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
+github.com/theplant/luhn v0.0.0-20170224032821-81a1a381387a h1:8Yp+jFiOdzOTk/YQcKEA/ccK0NQD3LT965HrQgNqd3o=
+github.com/theplant/luhn v0.0.0-20170224032821-81a1a381387a/go.mod h1:ZaMGXj0IgDRrzbd+S4SJEqxUQSOhbsyCbM6hXiIhnXM=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
