@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 )
 
 // интерфейс методов хранилища
@@ -24,7 +24,7 @@ func NewService(s StorageProvider) *Services {
 	}
 }
 
-func (sr *Services) ServiceCreateNewUser(dc settings.DecodeLoginPair) (err error) {
+func (sr *Services) ServiceCreateNewUser(dc models.DecodeLoginPair) (err error) {
 
 	src := []byte("Здесь могло быть написано, чем Go лучше Rust. " +
 		"Но после хеширования уже не прочитаешь.")
@@ -36,7 +36,7 @@ func (sr *Services) ServiceCreateNewUser(dc settings.DecodeLoginPair) (err error
 	return err
 }
 
-func (sr *Services) ServiceAuthorizationCheck(dc settings.DecodeLoginPair) (err error) {
+func (sr *Services) ServiceAuthorizationCheck(dc models.DecodeLoginPair) (err error) {
 	return err
 }
 
@@ -44,8 +44,7 @@ func (sr *Services) ServiceNewOrderLoad(login string, order_num string) (err err
 	return err
 }
 
-
 // получение спска размещенных пользователем заказов, сортировка выдачи по времени загрузки
-func (sr *Services) ServiceGetOrdersList(login string) (err error) {
-	return err
+func (sr *Services) ServiceGetOrdersList(login string) (ec models.OrdersList, err error) {
+	return
 }
