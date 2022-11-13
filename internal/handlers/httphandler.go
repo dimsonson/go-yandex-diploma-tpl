@@ -9,15 +9,17 @@ import (
 	"strings"
 
 	"github.com/ShiraazMoollatjie/goluhn"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/go-chi/jwtauth"
 )
 
 // интерфейс методов бизнес логики
 type Services interface {
-	ServiceCreateNewUser(settings.DecodeLoginPair) (err error)
-	ServiceAuthorizationCheck(dc settings.DecodeLoginPair) (err error)
+	ServiceCreateNewUser(models.DecodeLoginPair) (err error)
+	ServiceAuthorizationCheck(dc models.DecodeLoginPair) (err error)
 	ServiceNewOrderLoad(login string, order_num string) (err error)
+	ServiceGetOrdersList(login string) (ec models.OrdersList, err error)
 }
 
 // структура для конструктура обработчика
@@ -40,7 +42,7 @@ func (hn Handler) IncorrectRequests(w http.ResponseWriter, r *http.Request) {
 // регистрация пользователя: HTTPзаголовок Authorization
 func (hn Handler) HandlerNewUserReg(w http.ResponseWriter, r *http.Request) {
 	// десериализация тела запроса
-	dc := settings.DecodeLoginPair{}
+	dc := models.DecodeLoginPair{}
 	err := json.NewDecoder(r.Body).Decode(&dc)
 	if err != nil {
 		log.Printf("Unmarshal error: %s", err)
@@ -63,7 +65,7 @@ func (hn Handler) HandlerNewUserReg(w http.ResponseWriter, r *http.Request) {
 // аутентификация пользователя: HTTPзаголовок Authorization
 func (hn Handler) HandlerUserAuth(w http.ResponseWriter, r *http.Request) {
 	// десериализация тела запроса
-	dc := settings.DecodeLoginPair{}
+	dc := models.DecodeLoginPair{}
 	err := json.NewDecoder(r.Body).Decode(&dc)
 	if err != nil {
 		log.Printf("Unmarshal error: %s", err)
@@ -125,7 +127,28 @@ func (hn Handler) HandlerNewOrderLoad(w http.ResponseWriter, r *http.Request) {
 
 // получение списка загруженных пользователем номеров заказов, статусов их обработки и информации о начислениях
 func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "server error", http.StatusInternalServerError)
+	// получаем значение login из контекста запроса
+	_, tokenString, _ := jwtauth.FromContext(r.Context())
+	// получаем
+	ec, err := hn.service.ServiceGetOrdersList(tokenString["login"].(string))
+
+	switch {
+	case err != nil && strings.Contains(err.Error(), "customer order already exist"):
+		w.WriteHeader(http.StatusOK)
+	case err != nil && strings.Contains(err.Error(), "same order number was loaded by another customer"):
+		w.WriteHeader(http.StatusConflict)
+	case err != nil:
+		w.WriteHeader(http.StatusInternalServerError)
+	default:
+		w.WriteHeader(http.StatusAccepted)
+	}
+
+	// сериализация тела запроса
+	w.Header().Set("content-type", "application/json; charset=utf-8")
+	//устанавливаем статус-код 201
+	w.WriteHeader(http.StatusOK)
+	// сериализуем и пишем тело ответа
+	json.NewEncoder(w).Encode(ec)
 }
 
 // получение текущего баланса счёта баллов лояльности пользователя
@@ -134,7 +157,7 @@ func (hn Handler) HandlerGetUserBalance(w http.ResponseWriter, r *http.Request) 
 }
 
 // запрос на списание баллов с накопительного счёта в счёт оплаты нового заказа
-func (hn Handler) HandlerNewUserAccWithdrawal(w http.ResponseWriter, r *http.Request) {
+func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "server error", http.StatusInternalServerError)
 }
 

@@ -1,6 +1,11 @@
 package services
 
-import "github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
+import (
+	"crypto/sha256"
+	"fmt"
+
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
+)
 
 // интерфейс методов хранилища
 type StorageProvider interface {
@@ -20,6 +25,14 @@ func NewService(s StorageProvider) *Services {
 }
 
 func (sr *Services) ServiceCreateNewUser(dc settings.DecodeLoginPair) (err error) {
+
+	src := []byte("Здесь могло быть написано, чем Go лучше Rust. " +
+		"Но после хеширования уже не прочитаешь.")
+	h := sha256.New()
+	h.Write(src)
+	dst := h.Sum(nil)
+	fmt.Printf("%x", dst)
+
 	return err
 }
 
@@ -28,5 +41,11 @@ func (sr *Services) ServiceAuthorizationCheck(dc settings.DecodeLoginPair) (err 
 }
 
 func (sr *Services) ServiceNewOrderLoad(login string, order_num string) (err error) {
+	return err
+}
+
+
+// получение спска размещенных пользователем заказов, сортировка выдачи по времени загрузки
+func (sr *Services) ServiceGetOrdersList(login string) (err error) {
 	return err
 }

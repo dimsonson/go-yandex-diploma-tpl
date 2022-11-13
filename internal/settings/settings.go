@@ -43,8 +43,3 @@ const (
 // переменная ключа токена
 var TokenAuth *jwtauth.JWTAuth = jwtauth.New("HS256", []byte(SignKey), nil)
 
-// структура декодирования пары логин:пароль
-type DecodeLoginPair struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
-}

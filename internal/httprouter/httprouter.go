@@ -32,7 +32,7 @@ func NewRouter(hn *handlers.Handler) chi.Router {
 		// получение текущего баланса счёта баллов лояльности пользователя
 		r.Get("/api/user/balance", hn.HandlerGetUserBalance)
 		// запрос на списание баллов с накопительного счёта в счёт оплаты нового заказа
-		r.Post("/api/user/balance/withdraw", hn.HandlerNewUserAccWithdrawal)
+		r.Post("/api/user/balance/withdraw", hn.HandlerNewWithdrawal)
 		// получение информации о выводе средств с накопительного счёта пользователем
 		r.Get("/api/user/balance/withdrawals", hn.HandlerGetWithdrawalsList)
 
