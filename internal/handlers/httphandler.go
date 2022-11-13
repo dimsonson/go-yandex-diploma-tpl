@@ -20,6 +20,9 @@ type Services interface {
 	ServiceAuthorizationCheck(dc models.DecodeLoginPair) (err error)
 	ServiceNewOrderLoad(login string, order_num string) (err error)
 	ServiceGetOrdersList(login string) (ec models.OrdersList, err error)
+	ServiceGetUserBalance(login string) (ec models.LoginBalance, err error)
+	ServiceNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
+	ServiceGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error)
 }
 
 // структура для конструктура обработчика
@@ -129,39 +132,92 @@ func (hn Handler) HandlerNewOrderLoad(w http.ResponseWriter, r *http.Request) {
 func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
-	// получаем
+	// получаем слайс структур и ошибку
 	ec, err := hn.service.ServiceGetOrdersList(tokenString["login"].(string))
-
 	switch {
-	case err != nil && strings.Contains(err.Error(), "customer order already exist"):
-		w.WriteHeader(http.StatusOK)
-	case err != nil && strings.Contains(err.Error(), "same order number was loaded by another customer"):
-		w.WriteHeader(http.StatusConflict)
+	case err != nil && strings.Contains(err.Error(), "no records for this login"):
+		w.WriteHeader(http.StatusNoContent)
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
-		w.WriteHeader(http.StatusAccepted)
+		// сериализация тела запроса
+		w.Header().Set("content-type", "application/json; charset=utf-8")
+		//устанавливаем статус-код 201
+		w.WriteHeader(http.StatusOK)
+		// сериализуем и пишем тело ответа
+		json.NewEncoder(w).Encode(ec)
 	}
-
-	// сериализация тела запроса
-	w.Header().Set("content-type", "application/json; charset=utf-8")
-	//устанавливаем статус-код 201
-	w.WriteHeader(http.StatusOK)
-	// сериализуем и пишем тело ответа
-	json.NewEncoder(w).Encode(ec)
 }
 
 // получение текущего баланса счёта баллов лояльности пользователя
 func (hn Handler) HandlerGetUserBalance(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "server error", http.StatusInternalServerError)
+	// получаем значение login из контекста запроса
+	_, tokenString, _ := jwtauth.FromContext(r.Context())
+	// получаем слайс структур и ошибку
+	ec, err := hn.service.ServiceGetUserBalance(tokenString["login"].(string))
+	switch {
+	case err != nil:
+		w.WriteHeader(http.StatusInternalServerError)
+	default:
+		// сериализация тела запроса
+		w.Header().Set("content-type", "application/json; charset=utf-8")
+		//устанавливаем статус-код 201
+		w.WriteHeader(http.StatusOK)
+		// сериализуем и пишем тело ответа
+		json.NewEncoder(w).Encode(ec)
+	}
 }
 
 // запрос на списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "server error", http.StatusInternalServerError)
+	// десериализация тела запроса
+	dc := models.NewWithdrawal{}
+	err := json.NewDecoder(r.Body).Decode(&dc)
+	if err != nil {
+		log.Printf("Unmarshal error: %s", err)
+		http.Error(w, "invalid JSON structure received", http.StatusBadRequest)
+		return
+	}
+	// проверяем на алгоритм Луна, если не ок, возвращаем 422
+	err = goluhn.Validate(dc.Order)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	// получаем значение login из контекста запроса
+	_, tokenString, _ := jwtauth.FromContext(r.Context())
+	// отпправляем на списание
+	err = hn.service.ServiceNewWithdrawal(tokenString["login"].(string), dc)
+	// 200 - при ошибке nil, 500 - при иных ошибках сервиса, 422 - проверка Луна не ок
+	// 402 - если получена ошибка "insufficient funds"
+	switch {
+	case err != nil && strings.Contains(err.Error(), "insufficient funds"):
+		w.WriteHeader(http.StatusOK)
+	case err != nil:
+		w.WriteHeader(http.StatusInternalServerError)
+	default:
+		w.WriteHeader(http.StatusOK)
+	}
 }
 
 // получение информации о выводе средств с накопительного счёта пользователем
 func (hn Handler) HandlerGetWithdrawalsList(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "server error", http.StatusInternalServerError)
+	// получаем значение login из контекста запроса
+	_, tokenString, _ := jwtauth.FromContext(r.Context())
+	// получаем слайс структур и ошибку
+	ec, err := hn.service.ServiceGetWithdrawalsList(tokenString["login"].(string))
+	// 200 - при ошибке nil, кодирование, 500 - при иных ошибках сервиса, 204 - если получена ошибка "no records"
+	switch {
+	case err != nil && strings.Contains(err.Error(), "no records"):
+		w.WriteHeader(http.StatusNoContent)
+	case err != nil:
+		w.WriteHeader(http.StatusInternalServerError)
+	default:
+		// сериализация тела запроса
+		w.Header().Set("content-type", "application/json; charset=utf-8")
+		// устанавливаем статус-код 201
+		w.WriteHeader(http.StatusOK)
+		// сериализуем и пишем тело ответа
+		json.NewEncoder(w).Encode(ec)
+	}
 }
