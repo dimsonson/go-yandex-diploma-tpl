@@ -12,10 +12,8 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/go-chi/jwtauth"
-	_"github.com/shopspring/decimal"
-	
+	_ "github.com/shopspring/decimal"
 )
-
 
 // интерфейс методов бизнес логики
 type Services interface {

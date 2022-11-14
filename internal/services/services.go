@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
-	"github.com/shopspring/decimal"
 	//"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 )
 
@@ -69,58 +68,28 @@ func (sr *Services) ServiceNewOrderLoad(login string, order_num string) (err err
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
 func (sr *Services) ServiceGetOrdersList(login string) (ec models.OrdersList, err error) {
 	fmt.Println("ServiceGetOrdersList login", login)
-	ec = models.OrdersList{
-		{
-			Number:  "9278923470",
-			Status:  "PROCESSED",
-			Accrual: decimal.NewFromFloatWithExponent(500, -2),
-			// UploadedAt: "2020-12-10T15:15:45+03:00",
-		},
-		{
-			Number: "12345678903",
-			Status: "PROCESSING",
-			// UploadedAt: "2020-12-10T15:12:01+03:00",
-		},
-		{
-			Number: "346436439",
-			Status: "INVALID",
-			// UploadedAt: "2020-12-09T16:09:53+03:00",
-		},
-	}
+	ec, err = sr.storage.StorageGetOrdersList(login)
 	return ec, err
 }
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
 func (sr *Services) ServiceGetUserBalance(login string) (ec models.LoginBalance, err error) {
 	fmt.Println("ServiceGetUserBalance login", login)
-	ec = models.LoginBalance{
-		Current:   decimal.NewFromFloatWithExponent(500.505, -2),
-		Withdrawn: decimal.NewFromFloatWithExponent(42, -2),
-	}
+	ec, err = sr.storage.StorageGetUserBalance(login)
 	return ec, err
 }
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (sr *Services) ServiceNewWithdrawal(login string, dc models.NewWithdrawal) (err error) {
 	fmt.Println("ServiceNewWithdrawal login, dc", login, dc)
+	err = sr.storage.StorageNewWithdrawal(login, dc)
 	return err
 }
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
 func (sr *Services) ServiceGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error) {
 	fmt.Println("ServiceGetWithdrawalsList login", login)
-	ec = models.WithdrawalsList{
-		{
-			Order: "2377225624",
-			Sum:   decimal.NewFromFloatWithExponent(500.0300, -2),
-			//ProcessedAt: "2020-12-09T16:09:57+03:00",
-		},
-		{
-			Order: "2377225625",
-			Sum:   decimal.NewFromFloatWithExponent(800.5555, -2),
-			//ProcessedAt: "2020-12-09T16:09:57+03:00",
-		},
-	}
+	ec, err = sr.storage.StorageGetWithdrawalsList(login)
 	return ec, err
 }
 

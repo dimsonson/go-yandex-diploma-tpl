@@ -50,7 +50,6 @@ func (ms *StorageSQL) StorageConnectionClose() {
 	ms.PostgreSQL.Close()
 }
 
-
 // добавление нового пользователя в хранилище
 func (ms *StorageSQL) StorageCreateNewUser(login string, passw []byte) (err error) {
 	fmt.Println("StorageCreateNewUser login, passw", login, string(passw))
