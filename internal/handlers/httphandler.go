@@ -205,7 +205,6 @@ func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 // получение информации о выводе средств с накопительного счёта пользователем
 func (hn Handler) HandlerGetWithdrawalsList(w http.ResponseWriter, r *http.Request) {
 	// получаем значение login из контекста запроса
