@@ -116,9 +116,9 @@ func (hn Handler) HandlerNewOrderLoad(w http.ResponseWriter, r *http.Request) {
 	// если от другого пользователя - 409
 	// если нет ошибок - 202
 	switch {
-	case err != nil && strings.Contains(err.Error(), "customer order already exist"):
+	case err != nil && strings.Contains(err.Error(), "customer order from this login already exist"):
 		w.WriteHeader(http.StatusOK)
-	case err != nil && strings.Contains(err.Error(), "same order number was loaded by another customer"):
+	case err != nil && strings.Contains(err.Error(), "the same order number was loaded by another customer"):
 		w.WriteHeader(http.StatusConflict)
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
@@ -134,6 +134,7 @@ func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
 	ec, err := hn.service.ServiceGetOrdersList(tokenString["login"].(string))
+	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no records for this login"):
 		w.WriteHeader(http.StatusNoContent)
@@ -142,7 +143,7 @@ func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 	default:
 		// сериализация тела запроса
 		w.Header().Set("content-type", "application/json; charset=utf-8")
-		//устанавливаем статус-код 201
+		//устанавливаем статус-код 200
 		w.WriteHeader(http.StatusOK)
 		// сериализуем и пишем тело ответа
 		json.NewEncoder(w).Encode(ec)
@@ -155,13 +156,14 @@ func (hn Handler) HandlerGetUserBalance(w http.ResponseWriter, r *http.Request) 
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
 	ec, err := hn.service.ServiceGetUserBalance(tokenString["login"].(string))
+	// 200 - при ошибке nil, 500 - при иных ошибках сервиса
 	switch {
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		// сериализация тела запроса
 		w.Header().Set("content-type", "application/json; charset=utf-8")
-		//устанавливаем статус-код 201
+		//устанавливаем статус-код 200
 		w.WriteHeader(http.StatusOK)
 		// сериализуем и пишем тело ответа
 		json.NewEncoder(w).Encode(ec)
@@ -215,7 +217,7 @@ func (hn Handler) HandlerGetWithdrawalsList(w http.ResponseWriter, r *http.Reque
 	default:
 		// сериализация тела запроса
 		w.Header().Set("content-type", "application/json; charset=utf-8")
-		// устанавливаем статус-код 201
+		// устанавливаем статус-код 200
 		w.WriteHeader(http.StatusOK)
 		// сериализуем и пишем тело ответа
 		json.NewEncoder(w).Encode(ec)
