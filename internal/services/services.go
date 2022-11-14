@@ -2,6 +2,7 @@ package services
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 
@@ -62,6 +63,7 @@ func (sr *Services) ServiceAuthorizationCheck(dc models.DecodeLoginPair) (err er
 // сервис загрузки пользователем номера заказа для расчёта
 func (sr *Services) ServiceNewOrderLoad(login string, order_num string) (err error) {
 	fmt.Println("ServiceNewOrderLoad login, order_num ", login, order_num)
+	err = sr.storage.StorageNewOrderLoad(login, order_num)
 	return err
 }
 
@@ -97,7 +99,9 @@ func ToHex(src string) (dst string, err error) {
 	//src = []byte("Здесь могло быть написано, чем Go лучше Rust. " +  "Но после хеширования уже не прочитаешь.")
 	h := sha256.New()
 	h.Write([]byte(src))
-	tmp := h.Sum(nil)
+	tmpBytes := h.Sum(nil)
+	dst = hex.EncodeToString(tmpBytes)
+
 	// fmt.Printf("%x\n", dst)
-	return string(tmp), err
+	return dst, err
 }

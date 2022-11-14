@@ -29,12 +29,61 @@ func NewSQLStorage(p string) *StorageSQL {
 		log.Println("database opening error:", settings.ColorRed, err, settings.ColorReset)
 	}
 	// создаем текст запроса
-	q := `CREATE TABLE IF NOT EXISTS sh_urls (
-				"userid" TEXT,
-				"short_url" TEXT NOT NULL UNIQUE,
-				"long_url" TEXT NOT NULL UNIQUE,
-				"deleted_url" BOOLEAN 
-				)`
+	q := `CREATE TABLE users
+	(
+	 login    text NOT NULL,
+	 password text NOT NULL,
+	 CONSTRAINT PK_1_users PRIMARY KEY ( login )
+	);
+	
+	
+	CREATE TABLE orders
+	(
+	 order_num   text NOT NULL,
+	 login       text NOT NULL,
+	 change_time timestamp with time zone NOT NULL,
+	 status      text NOT NULL,
+	 accrual     decimal NOT NULL,
+	 CONSTRAINT PK_1_orders PRIMARY KEY ( order_num ),
+	 CONSTRAINT REF_FK_1_orders FOREIGN KEY ( login ) REFERENCES users ( login )
+	);
+	
+	CREATE INDEX FK_1_orders ON orders
+	(
+	 login
+	);
+	
+		
+	CREATE TABLE balance
+	(
+	 login           text NOT NULL,
+	 current         decimal NOT NULL,
+	 total_withdrawn decimal NOT NULL,
+	 CONSTRAINT PK_1_balance PRIMARY KEY ( login ),
+	 CONSTRAINT REF_FK_4_balance FOREIGN KEY ( login ) REFERENCES users ( login )
+	);
+	
+	CREATE INDEX FK_1_balance ON balance
+	(
+	 login
+	);
+	
+	
+	CREATE TABLE withdrawals
+	(
+	 new_order       text NOT NULL,
+	 login           text NOT NULL,
+	 "sum"             decimal NOT NULL,
+	 withdrawal_time timestamp with time zone NOT NULL,
+	 CONSTRAINT PK_1_withdrawals PRIMARY KEY ( new_order ),
+	 CONSTRAINT REF_FK_3_withdrawals FOREIGN KEY ( login ) REFERENCES users ( login )
+	);
+	
+	CREATE INDEX FK_1_withdrawals ON withdrawals
+	(
+	 login
+	);`
+
 	// создаем таблицу в SQL базе, если не существует
 	_, err = db.ExecContext(ctx, q)
 	if err != nil {
@@ -51,8 +100,8 @@ func (ms *StorageSQL) StorageConnectionClose() {
 }
 
 // добавление нового пользователя в хранилище
-func (ms *StorageSQL) StorageCreateNewUser(login string, passw []byte) (err error) {
-	fmt.Println("StorageCreateNewUser login, passw", login, string(passw))
+func (ms *StorageSQL) StorageCreateNewUser(login string, passwHex string) (err error) {
+	fmt.Println("StorageCreateNewUser login, passw", login, passwHex)
 	return err
 }
 
@@ -94,7 +143,7 @@ func (ms *StorageSQL) StorageGetOrdersList(login string) (ec models.OrdersList, 
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
 func (ms *StorageSQL) StorageGetUserBalance(login string) (ec models.LoginBalance, err error) {
-	fmt.Println("ServiceGetUserBalance login", login)
+	fmt.Println("StorageGetUserBalance login", login)
 	ec = models.LoginBalance{
 		Current:   decimal.NewFromFloatWithExponent(500.505, -2),
 		Withdrawn: decimal.NewFromFloatWithExponent(42, -2),
@@ -104,13 +153,13 @@ func (ms *StorageSQL) StorageGetUserBalance(login string) (ec models.LoginBalanc
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (ms *StorageSQL) StorageNewWithdrawal(login string, dc models.NewWithdrawal) (err error) {
-	fmt.Println("ServiceNewWithdrawal login, dc", login, dc)
+	fmt.Println("StorageNewWithdrawal login, dc", login, dc)
 	return err
 }
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
 func (ms *StorageSQL) StorageGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error) {
-	fmt.Println("ServiceGetWithdrawalsList login", login)
+	fmt.Println("StorageGetWithdrawalsList login", login)
 	ec = models.WithdrawalsList{
 		{
 			Order: "2377225624",
