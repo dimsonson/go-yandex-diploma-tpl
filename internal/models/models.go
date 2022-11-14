@@ -38,7 +38,4 @@ type WithdrawalsList []struct {
 	Sum         decimal.Decimal `json:"sum"`
 	ProcessedAt time.Time       `json:"processed_at"`
 }
-// decimal
-var DivisionPrecision = 2
-var ExpMaxIterations = 1000
-var MarshalJSONWithoutQuotes = true
+
