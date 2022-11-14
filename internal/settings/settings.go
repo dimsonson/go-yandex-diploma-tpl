@@ -4,7 +4,10 @@ import (
 	"time"
 
 	"github.com/go-chi/jwtauth"
+	
 )
+
+
 
 // длинна укороченной ссылки без первого слеш
 const KeyLeght int = 5 //значение должно быть больше 0
@@ -42,4 +45,5 @@ const (
 
 // переменная ключа токена
 var TokenAuth *jwtauth.JWTAuth = jwtauth.New("HS256", []byte(SignKey), nil)
+
 

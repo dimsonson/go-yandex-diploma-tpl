@@ -5,7 +5,10 @@ import (
 	"fmt"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
+	"github.com/shopspring/decimal"
+	//"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 )
+
 
 // интерфейс методов хранилища
 type StorageProvider interface {
@@ -47,7 +50,7 @@ func (sr *Services) ServiceGetOrdersList(login string) (ec models.OrdersList, er
 		{
 			Number:  "9278923470",
 			Status:  "PROCESSED",
-			Accrual: 500,
+			Accrual:  decimal.NewFromFloatWithExponent(500, -2),
 			// UploadedAt: "2020-12-10T15:15:45+03:00",
 		},
 		{
@@ -68,11 +71,12 @@ func (sr *Services) ServiceGetOrdersList(login string) (ec models.OrdersList, er
 func (sr *Services) ServiceGetUserBalance(login string) (ec models.LoginBalance, err error) {
 	fmt.Println("ServiceGetUserBalance login", login)
 	ec = models.LoginBalance{
-		Current:   500.5,
-		Withdrawn: 42,
+		Current:   decimal.NewFromFloatWithExponent(500.505, -2),
+		Withdrawn: decimal.NewFromFloatWithExponent(42, -2),
 	}
 	return ec, err
 }
+
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (sr *Services) ServiceNewWithdrawal(login string, dc models.NewWithdrawal) (err error) {
@@ -86,12 +90,12 @@ func (sr *Services) ServiceGetWithdrawalsList(login string) (ec models.Withdrawa
 	ec = models.WithdrawalsList{
 		{
 			Order: "2377225624",
-			Sum:   500,
+			Sum:   decimal.NewFromFloatWithExponent(500.0300, -2),
 			//ProcessedAt: "2020-12-09T16:09:57+03:00",
 		},
 		{
 			Order: "2377225625",
-			Sum:   800,
+			Sum:   decimal.NewFromFloatWithExponent(800.5555, -2),
 			//ProcessedAt: "2020-12-09T16:09:57+03:00",
 		},
 	}

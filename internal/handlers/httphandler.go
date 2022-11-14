@@ -12,7 +12,10 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/go-chi/jwtauth"
+	_"github.com/shopspring/decimal"
+	
 )
+
 
 // интерфейс методов бизнес логики
 type Services interface {
@@ -201,6 +204,7 @@ func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
 }
+
 
 // получение информации о выводе средств с накопительного счёта пользователем
 func (hn Handler) HandlerGetWithdrawalsList(w http.ResponseWriter, r *http.Request) {

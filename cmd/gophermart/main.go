@@ -12,7 +12,14 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/storage"
+	"github.com/shopspring/decimal"
 )
+
+func init() {
+	decimal.MarshalJSONWithoutQuotes = true
+	decimal.DivisionPrecision = 2
+	decimal.ExpMaxIterations = 1000
+}
 
 // переменные по умолчанию
 const (

@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/shopspring/decimal"
+)
 
 // структура декодирования пары логин:пароль
 type DecodeLoginPair struct {
@@ -10,27 +14,31 @@ type DecodeLoginPair struct {
 
 // список заказов
 type OrdersList []struct {
-	Number     string    `json:"number"`
-	Status     string    `json:"status"`
-	Accrual    int       `json:"accrual,omitempty"`
-	UploadedAt time.Time `json:"uploaded_at"`
+	Number     string          `json:"number"`
+	Status     string          `json:"status"`
+	Accrual    decimal.Decimal `json:"accrual,omitempty"`
+	UploadedAt time.Time       `json:"uploaded_at"`
 }
 
 // баланс и сумма выводов средств по логину
 type LoginBalance struct {
-	Current   float64 `json:"current"`
-	Withdrawn int     `json:"withdrawn"`
+	Current   decimal.Decimal `json:"current"`
+	Withdrawn decimal.Decimal `json:"withdrawn"`
 }
 
 // структура списания с счета пользователя
 type NewWithdrawal struct {
-	Order string `json:"order"`
-	Sum   int    `json:"sum"`
+	Order string          `json:"order"`
+	Sum   decimal.Decimal `json:"sum"`
 }
 
 // информации о выводе средств с накопительного счёта пользователем
 type WithdrawalsList []struct {
-	Order       string    `json:"order"`
-	Sum         int       `json:"sum"`
-	ProcessedAt time.Time `json:"processed_at"`
+	Order       string          `json:"order"`
+	Sum         decimal.Decimal `json:"sum"`
+	ProcessedAt time.Time       `json:"processed_at"`
 }
+// decimal
+var DivisionPrecision = 2
+var ExpMaxIterations = 1000
+var MarshalJSONWithoutQuotes = true
