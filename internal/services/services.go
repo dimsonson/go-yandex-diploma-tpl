@@ -3,16 +3,23 @@ package services
 import (
 	"crypto/sha256"
 	"fmt"
+	"log"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/shopspring/decimal"
 	//"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 )
 
-
 // интерфейс методов хранилища
 type StorageProvider interface {
 	StorageConnectionClose()
+	StorageCreateNewUser(login string, passwH string) (err error)
+	StorageAuthorizationCheck(login string, passwHex string) (err error)
+	StorageNewOrderLoad(login string, order_num string) (err error)
+	StorageGetOrdersList(login string) (ec models.OrdersList, err error)
+	StorageGetUserBalance(login string) (ec models.LoginBalance, err error)
+	StorageNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
+	StorageGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error)
 }
 
 // структура конструктора бизнес логики
@@ -29,11 +36,27 @@ func NewService(s StorageProvider) *Services {
 
 func (sr *Services) ServiceCreateNewUser(dc models.DecodeLoginPair) (err error) {
 	fmt.Println("ServiceCreateNewUser dc", dc)
+	// сощдание хеш пароля для передачи в хранилище
+	passwHex, err := ToHex(dc.Password)
+	if err != nil {
+		log.Println("hex conversion in ServiceCreateNewUser error :", err)
+		return err
+	}
+	// передача пары логин:пароль в хранилище
+	err = sr.storage.StorageCreateNewUser(dc.Login, passwHex)
 	return err
 }
 
 func (sr *Services) ServiceAuthorizationCheck(dc models.DecodeLoginPair) (err error) {
 	fmt.Println("ServiceAuthorizationCheck dc", dc)
+	// сощдание хеш пароля для передачи в хранилище
+	passwHex, err := ToHex(dc.Password)
+	if err != nil {
+		log.Println("hex conversion in ServiceCreateNewUser error :", err)
+		return err
+	}
+	// передача пары логин:пароль в хранилище
+	err = sr.storage.StorageAuthorizationCheck(dc.Login, passwHex)
 	return err
 }
 
@@ -50,7 +73,7 @@ func (sr *Services) ServiceGetOrdersList(login string) (ec models.OrdersList, er
 		{
 			Number:  "9278923470",
 			Status:  "PROCESSED",
-			Accrual:  decimal.NewFromFloatWithExponent(500, -2),
+			Accrual: decimal.NewFromFloatWithExponent(500, -2),
 			// UploadedAt: "2020-12-10T15:15:45+03:00",
 		},
 		{
@@ -77,7 +100,6 @@ func (sr *Services) ServiceGetUserBalance(login string) (ec models.LoginBalance,
 	return ec, err
 }
 
-
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (sr *Services) ServiceNewWithdrawal(login string, dc models.NewWithdrawal) (err error) {
 	fmt.Println("ServiceNewWithdrawal login, dc", login, dc)
@@ -102,11 +124,11 @@ func (sr *Services) ServiceGetWithdrawalsList(login string) (ec models.Withdrawa
 	return ec, err
 }
 
-func ToHex(src []byte) (dst []byte, err error) {
+func ToHex(src string) (dst string, err error) {
 	//src = []byte("Здесь могло быть написано, чем Go лучше Rust. " +  "Но после хеширования уже не прочитаешь.")
 	h := sha256.New()
-	h.Write(src)
-	dst = h.Sum(nil)
-	fmt.Printf("%x", dst)
-	return dst, err
+	h.Write([]byte(src))
+	tmp := h.Sum(nil)
+	// fmt.Printf("%x\n", dst)
+	return string(tmp), err
 }
