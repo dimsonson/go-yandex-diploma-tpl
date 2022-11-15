@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -13,7 +14,7 @@ import (
 // интерфейс методов хранилища
 type StorageProvider interface {
 	StorageConnectionClose()
-	StorageCreateNewUser(login string, passwH string) (err error)
+	StorageCreateNewUser(ctx context.Context, login string, passwH string) (err error)
 	StorageAuthorizationCheck(login string, passwHex string) (err error)
 	StorageNewOrderLoad(login string, order_num string) (err error)
 	StorageGetOrdersList(login string) (ec models.OrdersList, err error)
@@ -34,7 +35,7 @@ func NewService(s StorageProvider) *Services {
 	}
 }
 
-func (sr *Services) ServiceCreateNewUser(dc models.DecodeLoginPair) (err error) {
+func (sr *Services) ServiceCreateNewUser(ctx context.Context, dc models.DecodeLoginPair) (err error) {
 	fmt.Println("ServiceCreateNewUser dc", dc)
 	// сощдание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
@@ -43,7 +44,7 @@ func (sr *Services) ServiceCreateNewUser(dc models.DecodeLoginPair) (err error) 
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = sr.storage.StorageCreateNewUser(dc.Login, passwHex)
+	err = sr.storage.StorageCreateNewUser(ctx, dc.Login, passwHex)
 	return err
 }
 

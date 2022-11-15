@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,7 +18,7 @@ import (
 
 // интерфейс методов бизнес логики
 type Services interface {
-	ServiceCreateNewUser(models.DecodeLoginPair) (err error)
+	ServiceCreateNewUser(ctx context.Context, dc models.DecodeLoginPair) (err error)
 	ServiceAuthorizationCheck(dc models.DecodeLoginPair) (err error)
 	ServiceNewOrderLoad(login string, order_num string) (err error)
 	ServiceGetOrdersList(login string) (ec models.OrdersList, err error)
@@ -45,6 +46,10 @@ func (hn Handler) IncorrectRequests(w http.ResponseWriter, r *http.Request) {
 
 // регистрация пользователя: HTTPзаголовок Authorization
 func (hn Handler) HandlerNewUserReg(w http.ResponseWriter, r *http.Request) {
+	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
+	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
+	// освобождаем ресурс
+	defer cancel()
 	// десериализация тела запроса
 	dc := models.DecodeLoginPair{}
 	err := json.NewDecoder(r.Body).Decode(&dc)
@@ -54,7 +59,7 @@ func (hn Handler) HandlerNewUserReg(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// пишем пару логин:пароль в хранилище
-	err = hn.service.ServiceCreateNewUser(dc)
+	err = hn.service.ServiceCreateNewUser(ctx, dc)
 	// если логин существует возвращаем статус 409, если иная ошибка - 500, если без ошибок -200
 	switch {
 	case err != nil && strings.Contains(err.Error(), "login exist"):

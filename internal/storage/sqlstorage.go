@@ -3,11 +3,14 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/shopspring/decimal"
 )
@@ -29,7 +32,7 @@ func NewSQLStorage(p string) *StorageSQL {
 		log.Println("database opening error:", settings.ColorRed, err, settings.ColorReset)
 	}
 	// создаем текст запроса
-	q := `CREATE TABLE users
+	q := `CREATE TABLE IF NOT EXISTS users
 	(
 	 login    text NOT NULL,
 	 password text NOT NULL,
@@ -37,7 +40,7 @@ func NewSQLStorage(p string) *StorageSQL {
 	);
 	
 	
-	CREATE TABLE orders
+	CREATE TABLE IF NOT EXISTS orders
 	(
 	 order_num   text NOT NULL,
 	 login       text NOT NULL,
@@ -48,13 +51,13 @@ func NewSQLStorage(p string) *StorageSQL {
 	 CONSTRAINT REF_FK_1_orders FOREIGN KEY ( login ) REFERENCES users ( login )
 	);
 	
-	CREATE INDEX FK_1_orders ON orders
+	CREATE INDEX IF NOT EXISTS FK_1_orders ON orders
 	(
 	 login
 	);
 	
 		
-	CREATE TABLE balance
+	CREATE TABLE IF NOT EXISTS balance
 	(
 	 login           text NOT NULL,
 	 current         decimal NOT NULL,
@@ -63,13 +66,13 @@ func NewSQLStorage(p string) *StorageSQL {
 	 CONSTRAINT REF_FK_4_balance FOREIGN KEY ( login ) REFERENCES users ( login )
 	);
 	
-	CREATE INDEX FK_1_balance ON balance
+	CREATE INDEX IF NOT EXISTS FK_1_balance ON balance
 	(
 	 login
 	);
 	
 	
-	CREATE TABLE withdrawals
+	CREATE TABLE IF NOT EXISTS withdrawals
 	(
 	 new_order       text NOT NULL,
 	 login           text NOT NULL,
@@ -79,7 +82,7 @@ func NewSQLStorage(p string) *StorageSQL {
 	 CONSTRAINT REF_FK_3_withdrawals FOREIGN KEY ( login ) REFERENCES users ( login )
 	);
 	
-	CREATE INDEX FK_1_withdrawals ON withdrawals
+	CREATE INDEX IF NOT EXISTS FK_1_withdrawals ON withdrawals
 	(
 	 login
 	);`
@@ -100,7 +103,16 @@ func (ms *StorageSQL) StorageConnectionClose() {
 }
 
 // добавление нового пользователя в хранилище
-func (ms *StorageSQL) StorageCreateNewUser(login string, passwHex string) (err error) {
+func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, passwHex string) (err error) {
+	// создаем текст запроса
+	q := `INSERT INTO users VALUES ($1, $2)`
+	// записываем в хранилице userid, id, URL
+	_, err = ms.PostgreSQL.ExecContext(ctx, q, login, passwHex)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		err = errors.New("login exist")
+	}
+
 	fmt.Println("StorageCreateNewUser login, passw", login, passwHex)
 	return err
 }
