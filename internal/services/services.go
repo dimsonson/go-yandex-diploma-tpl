@@ -15,7 +15,7 @@ import (
 type StorageProvider interface {
 	StorageConnectionClose()
 	StorageCreateNewUser(ctx context.Context, login string, passwH string) (err error)
-	StorageAuthorizationCheck(login string, passwHex string) (err error)
+	StorageAuthorizationCheck(ctx context.Context, login string, passwHex string) (err error)
 	StorageNewOrderLoad(login string, order_num string) (err error)
 	StorageGetOrdersList(login string) (ec models.OrdersList, err error)
 	StorageGetUserBalance(login string) (ec models.LoginBalance, err error)
@@ -48,7 +48,7 @@ func (sr *Services) ServiceCreateNewUser(ctx context.Context, dc models.DecodeLo
 	return err
 }
 
-func (sr *Services) ServiceAuthorizationCheck(dc models.DecodeLoginPair) (err error) {
+func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.DecodeLoginPair) (err error) {
 	fmt.Println("ServiceAuthorizationCheck dc", dc)
 	// сощдание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
@@ -57,7 +57,7 @@ func (sr *Services) ServiceAuthorizationCheck(dc models.DecodeLoginPair) (err er
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = sr.storage.StorageAuthorizationCheck(dc.Login, passwHex)
+	err = sr.storage.StorageAuthorizationCheck(ctx, dc.Login, passwHex)
 	return err
 }
 

@@ -106,19 +106,29 @@ func (ms *StorageSQL) StorageConnectionClose() {
 func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, passwHex string) (err error) {
 	// создаем текст запроса
 	q := `INSERT INTO users VALUES ($1, $2)`
-	// записываем в хранилице userid, id, URL
+	// записываем в хранилице login, passwHex
 	_, err = ms.PostgreSQL.ExecContext(ctx, q, login, passwHex)
+	// если login есть в хранилище, возвращаем соответствующую ошибку
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 		err = errors.New("login exist")
 	}
-
 	fmt.Println("StorageCreateNewUser login, passw", login, passwHex)
 	return err
 }
 
 // проверка наличия нового пользователя в хранилище - авторизация
-func (ms *StorageSQL) StorageAuthorizationCheck(login string, passwHex string) (err error) {
+func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login string, passwHex string) (err error) {
+	var exist int
+	// создаем текст запроса
+	q := `SELECT 1 FROM users WHERE login = $1 AND password = $2`
+	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную value
+	err = ms.PostgreSQL.QueryRowContext(ctx, q, login, passwHex).Scan(&exist)
+	if err != nil {
+		log.Println("select GetFromStorage SQL request scan error:", err)
+		return err
+	}
+	fmt.Println(err)
 	fmt.Println("StorageAuthorizationCheck login, passw", login, passwHex)
 	return err
 }
