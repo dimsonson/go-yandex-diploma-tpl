@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"net/http"
+	"strings"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	//"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
@@ -26,12 +28,14 @@ type StorageProvider interface {
 // структура конструктора бизнес логики
 type Services struct {
 	storage StorageProvider
+	calcSys string
 }
 
 // конструктор бизнес логики
-func NewService(s StorageProvider) *Services {
+func NewService(s StorageProvider, calcSys string) *Services {
 	return &Services{
 		s,
+		calcSys,
 	}
 }
 
@@ -63,6 +67,17 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 
 // сервис загрузки пользователем номера заказа для расчёта
 func (sr *Services) ServiceNewOrderLoad(login string, order_num string) (err error) {
+	b := fmt.Sprintf("{\"order\":\"%s\"}", order_num)
+
+	fmt.Println("b string", b)
+	bPost, err := http.Post(sr.calcSys, "application/json", strings.NewReader(b))
+	if err != nil {
+		log.Println("http.Post:", bPost, err)
+		return
+	}
+	log.Println("http.Post:", bPost, err)
+	log.Println("http.Post Body:", bPost.Body, err)
+
 	fmt.Println("ServiceNewOrderLoad login, order_num ", login, order_num)
 	err = sr.storage.StorageNewOrderLoad(login, order_num)
 	return err

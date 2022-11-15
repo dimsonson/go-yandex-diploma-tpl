@@ -23,9 +23,9 @@ func init() {
 
 // переменные по умолчанию
 const (
-	defServAddr   = "localhost:8080"
+	defServAddr   = "localhost:8000"
 	defDBlink     = "postgres://postgres:1818@localhost:5432/gophm" // новую базу
-	defCalcSysURL = "localhost:8080"
+	defCalcSysURL = "http://localhost:8080/api/orders"
 )
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 	// инициализируем конструкторы
 	s := newStrorageProvider(dlink)
 	defer s.StorageConnectionClose()
-	srvs := services.NewService(s)
+	srvs := services.NewService(s, calcSys)
 	h := handlers.NewHandler(srvs)
 	r := httprouter.NewRouter(h)
 	// запускаем сервер
