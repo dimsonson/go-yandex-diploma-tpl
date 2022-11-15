@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -68,17 +69,38 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 // сервис загрузки пользователем номера заказа для расчёта
 func (sr *Services) ServiceNewOrderLoad(login string, order_num string) (err error) {
 	b := fmt.Sprintf("{\"order\":\"%s\"}", order_num)
-
 	fmt.Println("b string", b)
+
 	bPost, err := http.Post(sr.calcSys, "application/json", strings.NewReader(b))
 	if err != nil {
 		log.Println("http.Post:", bPost, err)
 		return
 	}
-	log.Println("http.Post:", bPost, err)
-	log.Println("http.Post Body:", bPost.Body, err)
+	fmt.Println("http.Post:", bPost, err)
+	fmt.Println("http.Post Body:", bPost.Body, err)
 
-	fmt.Println("ServiceNewOrderLoad login, order_num ", login, order_num)
+	g := fmt.Sprintf("%s/%s", sr.calcSys, order_num)
+
+	bGet, err := http.Get(g)
+	if err != nil {
+		log.Println("http.Post:", bPost, err)
+		return
+	}
+
+	// десериализация тела запроса
+	dc := models.OrderSatus{}
+	err = json.NewDecoder(bGet.Body).Decode(&dc)
+	if err != nil {
+		log.Printf("Unmarshal error: %s", err)
+		//http.Error(w, "invalid JSON structure received", http.StatusBadRequest)
+		return
+	}
+	fmt.Println("http.Get:", bGet, err)
+
+
+	fmt.Printf("dc:\n Accrual: %v\n Order: %v\n Status: %v\n", dc.Accrual, dc.Order, dc.Status)
+
+	log.Println("ServiceNewOrderLoad login, order_num ", login, order_num)
 	err = sr.storage.StorageNewOrderLoad(login, order_num)
 	return err
 }

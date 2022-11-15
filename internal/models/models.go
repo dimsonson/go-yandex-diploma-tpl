@@ -39,3 +39,9 @@ type WithdrawalsList []struct {
 	ProcessedAt time.Time       `json:"processed_at"`
 }
 
+// статус ордера из истемы начислений
+type OrderSatus struct {
+	Order   string          `json:"order"`
+	Status  string          `json:"status"`
+	Accrual decimal.Decimal `json:"accrual"`
+}
