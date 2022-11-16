@@ -44,9 +44,9 @@ func NewSQLStorage(p string) *StorageSQL {
 	(
 	 order_num   text NOT NULL,
 	 login       text NOT NULL,
-	 change_time timestamp with time zone NOT NULL,
-	 status      text NOT NULL,
-	 accrual     decimal NOT NULL,
+	 change_time timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+	 status      text NOT NULL DEFAULT 'REGISTERED',
+	 accrual     decimal DEFAULT 0,
 	 CONSTRAINT PK_1_orders PRIMARY KEY ( order_num ),
 	 CONSTRAINT REF_FK_1_orders FOREIGN KEY ( login ) REFERENCES users ( login )
 	);
@@ -77,7 +77,7 @@ func NewSQLStorage(p string) *StorageSQL {
 	 new_order       text NOT NULL,
 	 login           text NOT NULL,
 	 "sum"             decimal NOT NULL,
-	 withdrawal_time timestamp with time zone NOT NULL,
+	 withdrawal_time timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
 	 CONSTRAINT PK_1_withdrawals PRIMARY KEY ( new_order ),
 	 CONSTRAINT REF_FK_3_withdrawals FOREIGN KEY ( login ) REFERENCES users ( login )
 	);
@@ -133,9 +133,41 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 	return err
 }
 
-// сервис загрузки пользователем номера заказа для расчёта
-func (ms *StorageSQL) StorageNewOrderLoad(login string, order_num string) (err error) {
-	fmt.Println("StorageNewOrderLoad login, order_num ", login, order_num)
+// сервис загрузки номера заказа для расчёта
+func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, order_num string) (err error) {
+	// создаем текст запроса
+	q := `INSERT INTO orders (order_num, login) VALUES ($1, $2)`
+	// записываем в хранилице login, passwHex
+	_, err = ms.PostgreSQL.ExecContext(ctx, q, order_num, login)
+	// если  есть в хранилище, возвращаем соответствующую ошибку
+	var pgErr *pgconn.PgError
+	// проверяем на UniqueViolation и получаем существующий логин для возврата ошибки в зависимости от того чей login
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		var existLogin string
+		// создаем текст запроса
+		q := `SELECT login FROM orders WHERE order_num = $1`
+		// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную value
+		err = ms.PostgreSQL.QueryRowContext(ctx, q, order_num).Scan(&existLogin)
+		if err != nil {
+			log.Println("select StorageNewOrderLoad SQL request scan error:", err)
+			return err
+		}
+		if existLogin != login {
+			err = errors.New("the same order number was loaded by another customer")
+			return err
+		}
+		err = errors.New("order number from this login already exist")
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+// сервис обновление заказа для расчёта
+func (ms *StorageSQL) StorageNewOrderUpdate(login string, dc models.OrderSatus) (err error) {
+	fmt.Println("StorageNewOrderLoad login, order_num ", login, dc)
 	return err
 }
 

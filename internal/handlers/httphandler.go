@@ -20,7 +20,7 @@ import (
 type Services interface {
 	ServiceCreateNewUser(ctx context.Context, dc models.DecodeLoginPair) (err error)
 	ServiceAuthorizationCheck(ctx context.Context, dc models.DecodeLoginPair) (err error)
-	ServiceNewOrderLoad(login string, order_num string) (err error)
+	ServiceNewOrderLoad(ctx context.Context, login string, order_num string) (err error)
 	ServiceGetOrdersList(login string) (ec models.OrdersList, err error)
 	ServiceGetUserBalance(login string) (ec models.LoginBalance, err error)
 	ServiceNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
@@ -104,6 +104,10 @@ func (hn Handler) HandlerUserAuth(w http.ResponseWriter, r *http.Request) {
 
 // загрузка пользователем номера заказа для расчёта
 func (hn Handler) HandlerNewOrderLoad(w http.ResponseWriter, r *http.Request) {
+	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
+	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
+	// освобождаем ресурс
+	defer cancel()
 	// читаем Body
 	bs, err := io.ReadAll(r.Body)
 	// обрабатываем ошибку
@@ -121,12 +125,12 @@ func (hn Handler) HandlerNewOrderLoad(w http.ResponseWriter, r *http.Request) {
 	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// проверяем пару логин:пароль в хранилище
-	err = hn.service.ServiceNewOrderLoad(tokenString["login"].(string), b)
+	err = hn.service.ServiceNewOrderLoad(ctx, tokenString["login"].(string), b)
 	// если ордер существует от этого пользователя - статус 200, если иная ошибка - 500
 	// если от другого пользователя - 409
 	// если нет ошибок - 202
 	switch {
-	case err != nil && strings.Contains(err.Error(), "customer order from this login already exist"):
+	case err != nil && strings.Contains(err.Error(), "order number from this login already exist"):
 		w.WriteHeader(http.StatusOK)
 	case err != nil && strings.Contains(err.Error(), "the same order number was loaded by another customer"):
 		w.WriteHeader(http.StatusConflict)
