@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
@@ -34,57 +35,32 @@ func NewSQLStorage(p string) *StorageSQL {
 	// создаем текст запроса
 	q := `CREATE TABLE IF NOT EXISTS users
 	(
-	 login    text NOT NULL,
-	 password text NOT NULL,
-	 CONSTRAINT PK_1_users PRIMARY KEY ( login )
-	);
-	
+	 login    text NOT NULL UNIQUE,
+	 password text NOT NULL
+	 );
 	
 	CREATE TABLE IF NOT EXISTS orders
 	(
-	 order_num   text NOT NULL,
+	 order_num   text NOT NULL UNIQUE,
 	 login       text NOT NULL,
 	 change_time timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
 	 status      text NOT NULL DEFAULT 'REGISTERED',
-	 accrual     decimal DEFAULT 0,
-	 CONSTRAINT PK_1_orders PRIMARY KEY ( order_num ),
-	 CONSTRAINT REF_FK_1_orders FOREIGN KEY ( login ) REFERENCES users ( login )
+	 accrual     decimal DEFAULT 0	 
 	);
-	
-	CREATE INDEX IF NOT EXISTS FK_1_orders ON orders
-	(
-	 login
-	);
-	
 		
 	CREATE TABLE IF NOT EXISTS balance
 	(
-	 login           text NOT NULL,
+	 login           text NOT NULL UNIQUE,
 	 current_balance decimal NOT NULL,
-	 total_withdrawn decimal NOT NULL,
-	 CONSTRAINT PK_1_balance PRIMARY KEY ( login ),
-	 CONSTRAINT REF_FK_4_balance FOREIGN KEY ( login ) REFERENCES users ( login )
+	 total_withdrawn decimal NOT NULL
 	);
-	
-	CREATE INDEX IF NOT EXISTS FK_1_balance ON balance
-	(
-	 login
-	);
-	
-	
+		
 	CREATE TABLE IF NOT EXISTS withdrawals
 	(
-	 new_order       text NOT NULL,
+	 new_order       text NOT NULL UNIQUE,
 	 login           text NOT NULL,
 	 "sum"             decimal NOT NULL,
-	 withdrawal_time timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-	 CONSTRAINT PK_1_withdrawals PRIMARY KEY ( new_order ),
-	 CONSTRAINT REF_FK_3_withdrawals FOREIGN KEY ( login ) REFERENCES users ( login )
-	);
-	
-	CREATE INDEX IF NOT EXISTS FK_1_withdrawals ON withdrawals
-	(
-	 login
+	 withdrawal_time timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 	);`
 
 	// создаем таблицу в SQL базе, если не существует
@@ -105,46 +81,60 @@ func (ms *StorageSQL) StorageConnectionClose() {
 // добавление нового пользователя в хранилище
 func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, passwHex string) (err error) {
 	// объявляем транзакцию
-	tx, err := ms.PostgreSQL.Begin()
-	if err != nil {
+	tx, _ := ms.PostgreSQL.BeginTx(ctx, nil)
+	/* 	if err != nil {
 		log.Println("error StorageNewOrderUpdate tx.Begin : ", err)
 		return err
-	}
-	defer tx.Rollback()
-	// создаем текст запроса
-	q := `INSERT INTO users VALUES ($1, $2);`
-	// записываем в хранилице login, passwHex
-	_, err = ms.PostgreSQL.ExecContext(ctx, q, login, passwHex)
-	log.Println("ExecContext", err)
-	// если login есть в хранилище, возвращаем соответствующую ошибку
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-		err = errors.New("login exist")
-	}
-	log.Println("ExecContext AFTER", err)
-	//var pgErr *pgconn.PgError
-	// создаем текст запроса
-	q = `INSERT INTO balance VALUES ($1, 0, 0);`
-	// записываем в хранилице login, passwHex
-	_, err = ms.PostgreSQL.ExecContext(ctx, q, login)
-	log.Println("ExecContext 2", err)
-	err = errors.New("login exist")
-	// если login есть в хранилище, возвращаем соответствующую ошибку
-	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-		err = errors.New("login exist")
-	}
-	log.Println("ExecContext 2 AFTER", err)
-
-	if err != nil {
-		log.Println("insert transaction StorageCreateNewUser SQL reqest error :", err)
-	}
-
-	// сохраняем изменения
-	/* 	if err := tx.Commit(); err != nil {
-		log.Println("error StorageNewOrderUpdate tx.Commit : ", err)
 	} */
+	defer tx.Rollback()
+	{
+		// создаем текст запроса
+		//stmt, _ := tx.Prepare(`INSERT INTO users VALUES ($1, $2)`) //ON CONFLICT DO NOTHING;`)
+		//defer stmt.Close()
+		q := `INSERT INTO users VALUES ($1, $2)` // ON CONFLICT DO NOTHING;
+		// записываем в хранилице login, passwHex
+		_, err = tx.Exec(q, login, passwHex)
+		log.Println("ExecContext", err)
+		// если login есть в хранилище, возвращаем соответствующую ошибку
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			err = errors.New("login exist")
+		}
+		log.Println("ExecContext AFTER", err)
+	}
+	{
+		// создаем текст запроса
+		q := `INSERT INTO balance VALUES ($1, 0, 0);`
+	
+
+		log.Println("1st in 2nd :", err)
+
+		// записываем в хранилице login, passwHex
+		log.Println("Elogin", login)
+		_, err := tx.Exec(q, login)
+
+		var pgErr *pgconn.PgError
+		log.Println("ExecContext 2", err)
+		// если login есть в хранилище, возвращаем соответствующую ошибку
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			err = errors.New("login exist")
+		}
+
+		log.Println("ExecContext 2 AFTER", err)
+	}
+
+	if err != nil && !strings.Contains(err.Error(), "login exist") {
+		log.Println("insert transaction StorageCreateNewUser SQL reqest error :", err)
+		tx.Rollback()
+	}
+
 	log.Println("end1", err)
-	tx.Commit()
+	// сохраняем изменения
+	if err := tx.Commit(); err != nil {
+		log.Println("error StorageNewOrderUpdate tx.Commit : ", err)
+	} 
+	
+
 	log.Println("end2", err)
 
 	return err
