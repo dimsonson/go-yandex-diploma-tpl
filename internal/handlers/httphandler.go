@@ -21,7 +21,7 @@ type Services interface {
 	ServiceCreateNewUser(ctx context.Context, dc models.DecodeLoginPair) (err error)
 	ServiceAuthorizationCheck(ctx context.Context, dc models.DecodeLoginPair) (err error)
 	ServiceNewOrderLoad(ctx context.Context, login string, order_num string) (err error)
-	ServiceGetOrdersList(login string) (ec models.OrdersList, err error)
+	ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
 	ServiceGetUserBalance(login string) (ec models.LoginBalance, err error)
 	ServiceNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
 	ServiceGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error)
@@ -89,7 +89,7 @@ func (hn Handler) HandlerUserAuth(w http.ResponseWriter, r *http.Request) {
 	err = hn.service.ServiceAuthorizationCheck(ctx, dc)
 	// если логин существует и пароль ок возвращаем статус 200, если иная ошибка - 500, если пара неверна - 401
 	switch {
-	case err != nil && strings.Contains(err.Error(), "no rows in result set"):
+	case err != nil && strings.Contains(err.Error(), "login or password not exist"):
 		w.WriteHeader(http.StatusUnauthorized)
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
@@ -144,13 +144,17 @@ func (hn Handler) HandlerNewOrderLoad(w http.ResponseWriter, r *http.Request) {
 
 // получение списка загруженных пользователем номеров заказов, статусов их обработки и информации о начислениях
 func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
+	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
+	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
+	// освобождаем ресурс
+	defer cancel()
 	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
-	ec, err := hn.service.ServiceGetOrdersList(tokenString["login"].(string))
+	ec, err := hn.service.ServiceGetOrdersList(ctx, tokenString["login"].(string))
 	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
 	switch {
-	case err != nil && strings.Contains(err.Error(), "no records for this login"):
+	case err != nil && strings.Contains(err.Error(), "no orders for this login"):
 		w.WriteHeader(http.StatusNoContent)
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)

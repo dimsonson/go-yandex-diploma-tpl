@@ -21,7 +21,7 @@ type StorageProvider interface {
 	StorageCreateNewUser(ctx context.Context, login string, passwH string) (err error)
 	StorageAuthorizationCheck(ctx context.Context, login string, passwHex string) (err error)
 	StorageNewOrderLoad(ctx context.Context, login string, order_num string) (err error)
-	StorageGetOrdersList(login string) (ec models.OrdersList, err error)
+	StorageGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
 	StorageGetUserBalance(login string) (ec models.LoginBalance, err error)
 	StorageNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
 	StorageGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error)
@@ -84,6 +84,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 	err = sr.storage.StorageNewOrderLoad(ctx, login, order_num)
 	if err != nil {
 		log.Println(err)
+		return err
 	}
 
 	go func() {
@@ -94,7 +95,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			// освобождаем ресурс
 			defer cancel()
 			g := fmt.Sprintf("%s/%s", sr.calcSys, order_num)
-			bGet, err := http.Get(g)
+			rGet, err := http.Get(g)
 			if err != nil {
 				log.Println("http.Get error :", err)
 				return
@@ -102,7 +103,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 			// десериализация тела ответа системы
 			dc := models.OrderSatus{}
-			err = json.NewDecoder(bGet.Body).Decode(&dc)
+			err = json.NewDecoder(rGet.Body).Decode(&dc)
 			if err != nil {
 				log.Printf("Unmarshal error: %s", err)
 				return
@@ -114,15 +115,15 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 				return
 			}
 
-			log.Printf("login %s update order %s status to %s with accrual %v", login, dc.Order, dc.Status, dc.Accrual )
+			log.Printf("login %s update order %s status to %s with accrual %v", login, dc.Order, dc.Status, dc.Accrual)
 
 			if dc.Status == "INVALID" || dc.Status == "PROCESSED" {
-				log.Printf("order %s has updated status to %s", dc.Order, dc.Status )
+				log.Printf("order %s has updated status to %s", dc.Order, dc.Status)
 				return
 			}
 
 			fmt.Printf("dc:\n Accrual: %v\n Order: %v\n Status: %v\n", dc.Accrual, dc.Order, dc.Status)
-			fmt.Println("http.Get:", bGet, err)
+			fmt.Println("http.Get:", rGet, err)
 		}
 
 	}()
@@ -133,9 +134,9 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 }
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
-func (sr *Services) ServiceGetOrdersList(login string) (ec models.OrdersList, err error) {
+func (sr *Services) ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
 	fmt.Println("ServiceGetOrdersList login", login)
-	ec, err = sr.storage.StorageGetOrdersList(login)
+	ec, err = sr.storage.StorageGetOrdersList(ctx, login)
 	return ec, err
 }
 

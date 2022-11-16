@@ -13,7 +13,7 @@ type DecodeLoginPair struct {
 }
 
 // список заказов
-type OrdersList []struct {
+type OrdersList struct {
 	Number     string          `json:"number"`
 	Status     string          `json:"status"`
 	Accrual    decimal.Decimal `json:"accrual,omitempty"`
@@ -45,3 +45,4 @@ type OrderSatus struct {
 	Status  string          `json:"status"`
 	Accrual decimal.Decimal `json:"accrual"`
 }
+

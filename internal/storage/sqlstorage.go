@@ -105,7 +105,10 @@ func (ms *StorageSQL) StorageConnectionClose() {
 // добавление нового пользователя в хранилище
 func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, passwHex string) (err error) {
 	// создаем текст запроса
-	q := `INSERT INTO users VALUES ($1, $2)`
+	q := `BEGIN;
+	INSERT INTO users VALUES ($1, $2);
+	INSERT INTO balance VALUES ($1, 0, 0);
+	COMMIT;`
 	// записываем в хранилице login, passwHex
 	_, err = ms.PostgreSQL.ExecContext(ctx, q, login, passwHex)
 	// если login есть в хранилище, возвращаем соответствующую ошибку
@@ -128,8 +131,10 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 		log.Println("select GetFromStorage SQL request scan error:", err)
 		return err
 	}
-	fmt.Println(err)
-	fmt.Println("StorageAuthorizationCheck login, passw", login, passwHex)
+	if exist != 1 {
+		err = errors.New("login or password not exist")
+		return err
+	}
 	return err
 }
 
@@ -167,38 +172,72 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 
 // сервис обновление заказа для расчёта
 func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error) {
+	// объявляем транзакцию
+	tx, err := ms.PostgreSQL.Begin()
+	if err != nil {
+		log.Println("error StorageNewOrderUpdate tx.Begin : ", err)
+		return err
+	}
+	defer tx.Rollback()
 	// создаем текст запроса
 	q := `UPDATE orders SET status = $3, accrual = $4 
 	WHERE login = $1 AND order_num = $2 AND status != $3`
 	// записываем в хранилице login, passwHex
-	_, err = ms.PostgreSQL.ExecContext(ctx, q, login, dc.Order, dc.Status, dc.Accrual)
+	ordersUpd, err := ms.PostgreSQL.ExecContext(ctx, q, login, dc.Order, dc.Status, dc.Accrual)
+	ordersRows, _ := ordersUpd.RowsAffected()
 	// если логируем и возвращаем соответствующую ошибку
-	if err != nil {
+	if err != nil && ordersRows != 1 {
 		log.Println("update SQL request StorageNewOrderUpdate error:", err)
+	}
+
+	// создаем текст запроса
+	q = `UPDATE balance SET current_balance = $1, accrual = $4 
+	WHERE login = $1 AND order_num = $2 AND status != $3`
+	// записываем в хранилице login, passwHex
+	ordersUpd, err = ms.PostgreSQL.ExecContext(ctx, q, login, dc.Order, dc.Status, dc.Accrual)
+	ordersRows, _ = ordersUpd.RowsAffected()
+	// если логируем и возвращаем соответствующую ошибку
+	if err != nil && ordersRows != 1 {
+		log.Println("update SQL request StorageNewOrderUpdate error:", err)
+	}
+
+	// сохраняем изменения
+	if err := tx.Commit(); err != nil {
+		log.Println("error StorageNewOrderUpdate tx.Commit : ", err)
 	}
 	return err
 }
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
-func (ms *StorageSQL) StorageGetOrdersList(login string) (ec models.OrdersList, err error) {
-	fmt.Println("StorageGetOrdersList login", login)
-	ec = models.OrdersList{
-		{
-			Number:  "9278923470",
-			Status:  "PROCESSED",
-			Accrual: decimal.NewFromFloatWithExponent(500, -2),
-			// UploadedAt: "2020-12-10T15:15:45+03:00",
-		},
-		{
-			Number: "12345678903",
-			Status: "PROCESSING",
-			// UploadedAt: "2020-12-10T15:12:01+03:00",
-		},
-		{
-			Number: "346436439",
-			Status: "INVALID",
-			// UploadedAt: "2020-12-09T16:09:53+03:00",
-		},
+func (ms *StorageSQL) StorageGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
+	// создаем текст запроса
+	q := `SELECT order_num, status, accrual, change_time FROM orders WHERE login = $1 ORDER BY change_time`
+	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременные
+	rows, err := ms.PostgreSQL.QueryContext(ctx, q, login)
+	if err != nil {
+		log.Println("select StorageGetOrdersList SQL reqest error :", err)
+		return ec, err
+	}
+	defer rows.Close()
+	s := models.OrdersList{}
+	// пишем результат запроса (итерирование по полученному набору строк) в структуру
+	for rows.Next() {
+		err = rows.Scan(&s.Number, &s.Status, &s.Accrual, &s.UploadedAt)
+		if err != nil {
+			log.Println("row by row scan StorageGetOrdersList error :", err)
+			return ec, err
+		}
+		ec = append(ec, s)
+	}
+	// проверяем итерации на ошибки
+	err = rows.Err()
+	if err != nil {
+		log.Println("request StorageGetOrdersList iteration scan error:", err)
+		return ec, err
+	}
+	// проверяем наличие записей
+	if len(ec) == 0 {
+		err = errors.New("no orders for this login")
 	}
 	return ec, err
 }
