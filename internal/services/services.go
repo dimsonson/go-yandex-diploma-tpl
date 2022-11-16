@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	//"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 )
 
@@ -23,7 +25,7 @@ type StorageProvider interface {
 	StorageGetUserBalance(login string) (ec models.LoginBalance, err error)
 	StorageNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
 	StorageGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error)
-	StorageNewOrderUpdate(login string, dc models.OrderSatus) (err error)
+	StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error)
 }
 
 // структура конструктора бизнес логики
@@ -80,26 +82,51 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 	fmt.Println("http.Post Body:", bPost.Body, err)
 
 	err = sr.storage.StorageNewOrderLoad(ctx, login, order_num)
+	if err != nil {
+		log.Println(err)
+	}
 
-	/*
-		g := fmt.Sprintf("%s/%s", sr.calcSys, order_num)
-		bGet, err := http.Get(g)
-		if err != nil {
-			log.Println("http.Post:", bPost, err)
-			return err
+	go func() {
+
+		for {
+			ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
+			// освобождаем ресурс
+			defer cancel()
+			g := fmt.Sprintf("%s/%s", sr.calcSys, order_num)
+			bGet, err := http.Get(g)
+			if err != nil {
+				log.Println("http.Get error :", err)
+				return
+			}
+
+			// десериализация тела ответа системы
+			dc := models.OrderSatus{}
+			err = json.NewDecoder(bGet.Body).Decode(&dc)
+			if err != nil {
+				log.Printf("Unmarshal error: %s", err)
+				return
+			}
+
+			err = sr.storage.StorageNewOrderUpdate(ctx, login, dc)
+			if err != nil {
+				log.Println("sr.storage.StorageNewOrderUpdate error :", err)
+				return
+			}
+
+			log.Printf("login %s update order %s status to %s with accrual %v", login, dc.Order, dc.Status, dc.Accrual )
+
+			if dc.Status == "INVALID" || dc.Status == "PROCESSED" {
+				log.Printf("order %s has updated status to %s", dc.Order, dc.Status )
+				return
+			}
+
+			fmt.Printf("dc:\n Accrual: %v\n Order: %v\n Status: %v\n", dc.Accrual, dc.Order, dc.Status)
+			fmt.Println("http.Get:", bGet, err)
 		}
 
-		// десериализация тела запроса
-		dc := models.OrderSatus{}
-		err = json.NewDecoder(bGet.Body).Decode(&dc)
-		if err != nil {
-			log.Printf("Unmarshal error: %s", err)
-			return
-		}
-		fmt.Println("http.Get:", bGet, err)
-		fmt.Printf("dc:\n Accrual: %v\n Order: %v\n Status: %v\n", dc.Accrual, dc.Order, dc.Status)
+	}()
 
-		log.Println("ServiceNewOrderLoad login, order_num ", login, order_num) */
+	log.Println("ServiceNewOrderLoad login, order_num ", login, order_num)
 
 	return err
 }

@@ -166,8 +166,16 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 }
 
 // сервис обновление заказа для расчёта
-func (ms *StorageSQL) StorageNewOrderUpdate(login string, dc models.OrderSatus) (err error) {
-	fmt.Println("StorageNewOrderLoad login, order_num ", login, dc)
+func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error) {
+	// создаем текст запроса
+	q := `UPDATE orders SET status = $3, accrual = $4 
+	WHERE login = $1 AND order_num = $2 AND status != $3`
+	// записываем в хранилице login, passwHex
+	_, err = ms.PostgreSQL.ExecContext(ctx, q, login, dc.Order, dc.Status, dc.Accrual)
+	// если логируем и возвращаем соответствующую ошибку
+	if err != nil {
+		log.Println("update SQL request StorageNewOrderUpdate error:", err)
+	}
 	return err
 }
 
