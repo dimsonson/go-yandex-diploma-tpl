@@ -89,6 +89,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 	go func() {
 
 		for {
+			// переопередяляем контекст с таймаутом
 			ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
 			// освобождаем ресурс
 			defer cancel()
