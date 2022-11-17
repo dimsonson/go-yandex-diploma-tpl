@@ -112,7 +112,7 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 	}
 	{
 		// создаем текст запроса
-		q := `INSE RT INTO balance VALUES ($1, 0, 0);`
+		q := `INSERT INTO balance VALUES ($1, 0, 0);`
 		// записываем в хранилице login, passwHex
 		_, err = tx.Exec(q, login)
 		// если login есть в хранилище, возвращаем соответствующую ошибку
@@ -138,7 +138,6 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 	if err := tx.Commit(); err != nil {
 		log.Println("error StorageNewOrderUpdate tx.Commit : ", err)
 	}
-	fmt.Println("err ;;;", err)
 	return err
 }
 
