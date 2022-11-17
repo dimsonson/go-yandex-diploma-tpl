@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
@@ -82,61 +81,64 @@ func (ms *StorageSQL) StorageConnectionClose() {
 func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, passwHex string) (err error) {
 	// объявляем транзакцию
 	tx, _ := ms.PostgreSQL.BeginTx(ctx, nil)
-	/* 	if err != nil {
+	if err != nil {
 		log.Println("error StorageNewOrderUpdate tx.Begin : ", err)
 		return err
-	} */
+	}
 	defer tx.Rollback()
 	{
 		// создаем текст запроса
-		//stmt, _ := tx.Prepare(`INSERT INTO users VALUES ($1, $2)`) //ON CONFLICT DO NOTHING;`)
-		//defer stmt.Close()
-		q := `INSERT INTO users VALUES ($1, $2)` // ON CONFLICT DO NOTHING;
+		q := `INSERT INTO users VALUES ($1, $2)` 
 		// записываем в хранилице login, passwHex
 		_, err = tx.Exec(q, login, passwHex)
-		log.Println("ExecContext", err)
 		// если login есть в хранилище, возвращаем соответствующую ошибку
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		switch {
+		case errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation:
 			err = errors.New("login exist")
+			log.Println("insert 1st instruction of transaction StorageCreateNewUser SQL UniqueViolation error :", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+			}
+			return err
+		case err != nil && pgErr != nil && pgErr.Code != pgerrcode.UniqueViolation: 
+			log.Println("insert 1st instruction of transaction StorageCreateNewUser SQL request error :", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+			}
+			return err
+		default:
 		}
-		log.Println("ExecContext AFTER", err)
 	}
 	{
 		// создаем текст запроса
-		q := `INSERT INTO balance VALUES ($1, 0, 0);`
-	
-
-		log.Println("1st in 2nd :", err)
-
+		q := `INSE RT INTO balance VALUES ($1, 0, 0);`
 		// записываем в хранилице login, passwHex
-		log.Println("Elogin", login)
-		_, err := tx.Exec(q, login)
-
-		var pgErr *pgconn.PgError
-		log.Println("ExecContext 2", err)
+		_, err = tx.Exec(q, login)
 		// если login есть в хранилище, возвращаем соответствующую ошибку
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		var pgErr *pgconn.PgError
+		switch {
+		case errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation:
 			err = errors.New("login exist")
+			log.Println("insert 2st instruction of transaction StorageCreateNewUser SQL UniqueViolation error :", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+			}
+			return err
+		case err != nil && pgErr != nil && pgErr.Code != pgerrcode.UniqueViolation: 
+			log.Println("insert 2st instruction of transaction StorageCreateNewUser SQL request error :", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+			}
+			return err
+		default:
 		}
-
-		log.Println("ExecContext 2 AFTER", err)
 	}
-
-	if err != nil && !strings.Contains(err.Error(), "login exist") {
-		log.Println("insert transaction StorageCreateNewUser SQL reqest error :", err)
-		tx.Rollback()
-	}
-
-	log.Println("end1", err)
 	// сохраняем изменения
 	if err := tx.Commit(); err != nil {
 		log.Println("error StorageNewOrderUpdate tx.Commit : ", err)
-	} 
-	
-
-	log.Println("end2", err)
-
+	}
+	fmt.Println("err ;;;", err)
 	return err
 }
 
