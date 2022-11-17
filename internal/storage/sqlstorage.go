@@ -193,47 +193,76 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 // сервис обновление заказа для расчёта
 func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error) {
 	// объявляем транзакцию
-	tx, err := ms.PostgreSQL.Begin()
+	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
 	if err != nil {
 		log.Println("error StorageNewOrderUpdate tx.Begin : ", err)
 		return err
 	}
 	defer tx.Rollback()
-	// создаем текст запроса обновление orders
-	q := `UPDATE orders SET status = $3, accrual = $4 
-	WHERE login = $1 AND order_num = $2 AND status != $3`
-	// записываем в хранилице login, passwHex
-	ordersUpd, err := ms.PostgreSQL.ExecContext(ctx, q, login, dc.Order, dc.Status, dc.Accrual)
-	ordersRows, _ := ordersUpd.RowsAffected()
-	// логируем и возвращаем соответствующую ошибку
-	if err != nil || ordersRows != 1 {
-		err = errors.New("error or row not found for order udpate")
-		log.Println("update SQL request StorageNewOrderUpdate error:", err)
-	}
-	if dc.Accrual.GreaterThan(decimal.NewFromInt(0)) {
-		// получаем текущее значение баланса аккаунта
-		var balanceCurrent float64
-		// создаем текст запроса
-		q := `SELECT current_balance FROM balance WHERE login = $1`
-		// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную value
-		err = ms.PostgreSQL.QueryRowContext(ctx, q, login).Scan(&balanceCurrent)
-		if err != nil {
-			log.Println("select StorageNewOrderUpdate SQL request scan error:", err)
+	{
+		// создаем текст запроса обновление orders
+		q := `UPDATE orders SET status = $3, accrual = $4 WHERE login = $1 AND order_num = $2 AND status != $3`
+		// записываем в хранилице login, passwHex
+		ordersUpd, err := ms.PostgreSQL.Exec(q, login, dc.Order, dc.Status, dc.Accrual)
+		// проверяем на nil от panic
+		var ordersRows int64
+		if ordersUpd != nil {
+			ordersRows, err = ordersUpd.RowsAffected()
+			if err != nil {
+				return err
+			}
+		}
+		// логируем и возвращаем соответствующую ошибку
+		if err != nil || ordersRows != 1 {
+			err = errors.New("error or row not found for order udpate")
+			log.Println("update SQL request StorageNewOrderUpdate error:", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+			}
 			return err
 		}
-		// добавляем значение начисления к балансу
-		log.Println("balance before:", dc.Accrual)
-		dc.Accrual.Add(decimal.NewFromFloat(balanceCurrent))
-		log.Println("balance after:", dc.Accrual)
-		// создаем текст запроса обновление balance
-		q = `UPDATE balance SET current_balance = $2 WHERE login = $1`
-		// записываем в хранилице login, passwHex
-		balanceUpd, err := ms.PostgreSQL.ExecContext(ctx, q, login, dc.Accrual)
-		balanceRows, _ := balanceUpd.RowsAffected()
-		// если логируем и возвращаем соответствующую ошибку
-		if err != nil && balanceRows != 1 {
-			err = errors.New("error or row not found for balance udpate")
-			log.Println("update SQL request StorageNewOrderUpdate error:", err)
+	}
+	{
+		//если сумма начистения в обновлении больше 0, то добавлеям сумму начисления к балансу
+		if dc.Accrual.GreaterThan(decimal.NewFromInt(0)) {
+			// получаем текущее значение баланса аккаунта
+			var balanceCurrent float64
+			// создаем текст запроса
+			q := `SELECT current_balance FROM balance WHERE login = $1`
+			// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную value
+			err = ms.PostgreSQL.QueryRow(q, login).Scan(&balanceCurrent)
+			if err != nil {
+				log.Println("select StorageNewOrderUpdate SQL request scan error:", err)
+				if rollbackErr := tx.Rollback(); rollbackErr != nil {
+					log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				}
+				return err
+			}
+			// добавляем значение начисления к балансу
+			log.Println("balance before:", dc.Accrual)
+			dc.Accrual.Add(decimal.NewFromFloat(balanceCurrent))
+			log.Println("balance after:", dc.Accrual)
+			// создаем текст запроса обновление balance
+			q = `UPDATE balance SET current_balance = $2 WHERE login = $1`
+			// записываем в хранилице
+			balanceUpd, err := ms.PostgreSQL.Exec(q, login, dc.Accrual)
+			// проверяем на nil от panic
+			var balanceRows int64
+			if balanceUpd != nil {
+				balanceRows, err = balanceUpd.RowsAffected()
+				if err != nil {
+					return err
+				}
+			}
+			// если не ок логируем и возвращаем соответствующую ошибку
+			if err != nil && balanceRows != 1 {
+				err = errors.New("error or row not found for balance udpate")
+				log.Println("update SQL request StorageNewOrderUpdate error:", err)
+				if rollbackErr := tx.Rollback(); rollbackErr != nil {
+					log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				}
+				return err
+			}
 		}
 	}
 	// сохраняем изменения
@@ -293,9 +322,89 @@ func (ms *StorageSQL) StorageGetUserBalance(ctx context.Context, login string) (
 }
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
-func (ms *StorageSQL) StorageNewWithdrawal(login string, dc models.NewWithdrawal) (err error) {
+func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
+	// объявляем транзакцию
+	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
+	if err != nil {
+		log.Println("error StorageNewOrderUpdate tx.Begin : ", err)
+		return err
+	}
+	defer tx.Rollback()
+	{
+		// создаем текст запроса обновление withdrawals
+		q := `INSERT INTO withdrawals (new_order, login, "sum") VALUES ($1, $2, $3)`
+		// записываем в хранилице login, passwHex
+		_, err := ms.PostgreSQL.Exec(q, dc.Order, login, dc.Sum)
+		// логируем и возвращаем соответствующую ошибку
+		if err != nil {
+			log.Println("update SQL request StorageNewOrderUpdate error:", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+			}
+			return err
+		}
+	}
+	{
+		// уменьшаем остаток баланса на сумму списания и увеличиваем общую сумму списаний на эту же смумму
+		// получаем текущее значение баланса аккаунта и общую сумму списаний
+		var balanceCurrent decimal.Decimal
+		var balanceWithdrawls decimal.Decimal
+		// создаем текст запроса
+		q := `SELECT current_balance, total_withdrawn FROM balance WHERE login = $1`
+		// делаем запрос в SQL, получаем строку и пишем результат запроса в пременные
+		err = ms.PostgreSQL.QueryRow(q, login).Scan(&balanceCurrent, &balanceWithdrawls)
+		if err != nil {
+			log.Println("select StorageNewOrderUpdate SQL request scan error:", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+			}
+			return err
+		}
+		// проверяем наличие сресдтв для списания
+		if dc.Sum.GreaterThan(balanceCurrent) {
+			err = errors.New("insufficient funds")
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+			}
+			return err
+		}
+		// добавляем значение списания к балансу списаний
+		log.Println("balanceWithdrawls before:", balanceWithdrawls)
+		balanceWithdrawls = balanceWithdrawls.Add(dc.Sum)
+		log.Println("balanceWithdrawls after:", balanceWithdrawls)
+	
+		// вычитаем значение начисления из баланса счета
+		log.Println("balanceCurrent before:", balanceCurrent)
+		balanceCurrent = balanceCurrent.Sub(dc.Sum)
+		log.Println("balanceCurrent after:", balanceCurrent)
 
-	fmt.Println("StorageNewWithdrawal login, dc", login, dc)
+		// создаем текст запроса обновление balance
+		q = `UPDATE balance SET current_balance = $2, total_withdrawn =$3 WHERE login = $1`
+		// записываем в хранилице
+		balanceUpd, err := ms.PostgreSQL.Exec(q, login, balanceCurrent, balanceWithdrawls)
+		// проверяем на nil от panic
+		var balanceRows int64
+		if balanceUpd != nil {
+			balanceRows, err = balanceUpd.RowsAffected()
+			if err != nil {
+				return err
+			}
+		}
+		// если не ок логируем и возвращаем соответствующую ошибку
+		if err != nil && balanceRows != 1 {
+			err = errors.New("error or row not found for balance udpate")
+			log.Println("update SQL request StorageNewOrderUpdate error:", err)
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+			}
+			return err
+		}
+
+	}
+	// сохраняем изменения
+	if err := tx.Commit(); err != nil {
+		log.Println("error StorageNewOrderUpdate tx.Commit : ", err)
+	}
 	return err
 }
 

@@ -23,7 +23,7 @@ type Services interface {
 	ServiceNewOrderLoad(ctx context.Context, login string, order_num string) (err error)
 	ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
 	ServiceGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
-	ServiceNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
+	ServiceNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
 	ServiceGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
 }
 
@@ -195,9 +195,9 @@ func (hn Handler) HandlerGetUserBalance(w http.ResponseWriter, r *http.Request) 
 // запрос на списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
 	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
-	// ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
 	// освобождаем ресурс
-	// defer cancel()
+	 defer cancel()
 	// десериализация тела запроса
 	dc := models.NewWithdrawal{}
 	err := json.NewDecoder(r.Body).Decode(&dc)
@@ -215,12 +215,12 @@ func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
 	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// отпправляем на списание
-	err = hn.service.ServiceNewWithdrawal(tokenString["login"].(string), dc)
+	err = hn.service.ServiceNewWithdrawal(ctx, tokenString["login"].(string), dc)
 	// 200 - при ошибке nil, 500 - при иных ошибках сервиса, 422 - проверка Луна не ок
 	// 402 - если получена ошибка "insufficient funds"
 	switch {
 	case err != nil && strings.Contains(err.Error(), "insufficient funds"):
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusPaymentRequired)
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:

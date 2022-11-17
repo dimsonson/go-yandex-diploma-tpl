@@ -23,7 +23,7 @@ type StorageProvider interface {
 	StorageNewOrderLoad(ctx context.Context, login string, order_num string) (err error)
 	StorageGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
 	StorageGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
-	StorageNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
+	StorageNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
 	StorageGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
 	StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error)
 }
@@ -101,6 +101,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 				return
 			}
 
+			// if != 429
 			// десериализация тела ответа системы
 			dc := models.OrderSatus{}
 			err = json.NewDecoder(rGet.Body).Decode(&dc)
@@ -114,7 +115,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 				log.Println("sr.storage.StorageNewOrderUpdate error :", err)
 				return
 			}
-
+			// логируем
 			log.Printf("login %s update order %s status to %s with accrual %v", login, dc.Order, dc.Status, dc.Accrual)
 
 			if dc.Status == "INVALID" || dc.Status == "PROCESSED" {
@@ -148,9 +149,9 @@ func (sr *Services) ServiceGetUserBalance(ctx context.Context, login string) (ec
 }
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
-func (sr *Services) ServiceNewWithdrawal(login string, dc models.NewWithdrawal) (err error) {
+func (sr *Services) ServiceNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
 	fmt.Println("ServiceNewWithdrawal login, dc", login, dc)
-	err = sr.storage.StorageNewWithdrawal(login, dc)
+	err = sr.storage.StorageNewWithdrawal(ctx, login, dc)
 	return err
 }
 
@@ -161,13 +162,11 @@ func (sr *Services) ServiceGetWithdrawalsList(ctx context.Context, login string)
 	return ec, err
 }
 
+// функция SHA.256 хеширования строки и кодирования хеша в строку
 func ToHex(src string) (dst string, err error) {
-	//src = []byte("Здесь могло быть написано, чем Go лучше Rust. " +  "Но после хеширования уже не прочитаешь.")
 	h := sha256.New()
 	h.Write([]byte(src))
 	tmpBytes := h.Sum(nil)
 	dst = hex.EncodeToString(tmpBytes)
-
-	// fmt.Printf("%x\n", dst)
 	return dst, err
 }
