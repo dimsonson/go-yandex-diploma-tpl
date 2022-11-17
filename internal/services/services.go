@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
@@ -100,31 +102,39 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 				log.Println("http.Get error :", err)
 				return
 			}
+			// выполняем дальше, если нет 429 кода ответа
+			if rGet.StatusCode != 429 {
+				// десериализация тела ответа системы
+				dc := models.OrderSatus{}
+				err = json.NewDecoder(rGet.Body).Decode(&dc)
+				if err != nil {
+					log.Printf("Unmarshal error: %s", err)
+					return
+				}
 
-			// if != 429
-			// десериализация тела ответа системы
-			dc := models.OrderSatus{}
-			err = json.NewDecoder(rGet.Body).Decode(&dc)
-			if err != nil {
-				log.Printf("Unmarshal error: %s", err)
-				return
+				err = sr.storage.StorageNewOrderUpdate(ctx, login, dc)
+				if err != nil {
+					log.Println("sr.storage.StorageNewOrderUpdate error :", err)
+					return
+				}
+				// логируем
+				log.Printf("login %s update order %s status to %s with accrual %v", login, dc.Order, dc.Status, dc.Accrual)
+				if dc.Status == "INVALID" || dc.Status == "PROCESSED" {
+					log.Printf("order %s has updated status to %s", dc.Order, dc.Status)
+					return
+				}
 			}
-
-			err = sr.storage.StorageNewOrderUpdate(ctx, login, dc)
-			if err != nil {
-				log.Println("sr.storage.StorageNewOrderUpdate error :", err)
-				return
+			// пауза
+			time.Sleep(settings.RequestsTimeout)
+			if rGet.StatusCode != 429 {
+				timeout, err := strconv.Atoi(rGet.Header.Get("Retry-After"))
+				if err != nil {
+					log.Println("error converting Retry-After to int:", err)
+					return
+				}
+				// увеличиваем паузу в соотвествии с Retry-After
+				settings.RequestsTimeout = time.Duration(timeout) * time.Second
 			}
-			// логируем
-			log.Printf("login %s update order %s status to %s with accrual %v", login, dc.Order, dc.Status, dc.Accrual)
-
-			if dc.Status == "INVALID" || dc.Status == "PROCESSED" {
-				log.Printf("order %s has updated status to %s", dc.Order, dc.Status)
-				return
-			}
-
-			fmt.Printf("dc:\n Accrual: %v\n Order: %v\n Status: %v\n", dc.Accrual, dc.Order, dc.Status)
-			fmt.Println("http.Get:", rGet, err)
 		}
 
 	}()

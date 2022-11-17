@@ -221,6 +221,8 @@ func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil && strings.Contains(err.Error(), "insufficient funds"):
 		w.WriteHeader(http.StatusPaymentRequired)
+	case err != nil && strings.Contains(err.Error(), "new order number already exist"):
+		w.WriteHeader(http.StatusUnprocessableEntity)
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:

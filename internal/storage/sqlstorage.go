@@ -336,6 +336,11 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 		// записываем в хранилице login, passwHex
 		_, err := ms.PostgreSQL.Exec(q, dc.Order, login, dc.Sum)
 		// логируем и возвращаем соответствующую ошибку
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			err = errors.New("new order number already exist")
+			return err
+		}
 		if err != nil {
 			log.Println("update SQL request StorageNewOrderUpdate error:", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {

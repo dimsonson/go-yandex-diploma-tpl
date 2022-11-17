@@ -46,4 +46,7 @@ const (
 // переменная ключа токена
 var TokenAuth *jwtauth.JWTAuth = jwtauth.New("HS256", []byte(SignKey), nil)
 
+// начальный таймаут для горутины запросов к сервису расчета баллов
+var RequestsTimeout = 0 * time.Second
+
 
