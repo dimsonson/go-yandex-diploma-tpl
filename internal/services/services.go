@@ -22,7 +22,7 @@ type StorageProvider interface {
 	StorageAuthorizationCheck(ctx context.Context, login string, passwHex string) (err error)
 	StorageNewOrderLoad(ctx context.Context, login string, order_num string) (err error)
 	StorageGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
-	StorageGetUserBalance(login string) (ec models.LoginBalance, err error)
+	StorageGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
 	StorageNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
 	StorageGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error)
 	StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error)
@@ -141,9 +141,9 @@ func (sr *Services) ServiceGetOrdersList(ctx context.Context, login string) (ec 
 }
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
-func (sr *Services) ServiceGetUserBalance(login string) (ec models.LoginBalance, err error) {
+func (sr *Services) ServiceGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error) {
 	fmt.Println("ServiceGetUserBalance login", login)
-	ec, err = sr.storage.StorageGetUserBalance(login)
+	ec, err = sr.storage.StorageGetUserBalance(ctx, login)
 	return ec, err
 }
 

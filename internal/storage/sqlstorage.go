@@ -80,7 +80,7 @@ func (ms *StorageSQL) StorageConnectionClose() {
 // добавление нового пользователя в хранилище
 func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, passwHex string) (err error) {
 	// объявляем транзакцию
-	tx, _ := ms.PostgreSQL.BeginTx(ctx, nil)
+	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
 	if err != nil {
 		log.Println("error StorageNewOrderUpdate tx.Begin : ", err)
 		return err
@@ -88,7 +88,7 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 	defer tx.Rollback()
 	{
 		// создаем текст запроса
-		q := `INSERT INTO users VALUES ($1, $2)` 
+		q := `INSERT INTO users VALUES ($1, $2)`
 		// записываем в хранилице login, passwHex
 		_, err = tx.Exec(q, login, passwHex)
 		// если login есть в хранилище, возвращаем соответствующую ошибку
@@ -101,7 +101,7 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
 			}
 			return err
-		case err != nil && pgErr != nil && pgErr.Code != pgerrcode.UniqueViolation: 
+		case err != nil && pgErr != nil && pgErr.Code != pgerrcode.UniqueViolation:
 			log.Println("insert 1st instruction of transaction StorageCreateNewUser SQL request error :", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
@@ -125,7 +125,7 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
 			}
 			return err
-		case err != nil && pgErr != nil && pgErr.Code != pgerrcode.UniqueViolation: 
+		case err != nil && pgErr != nil && pgErr.Code != pgerrcode.UniqueViolation:
 			log.Println("insert 2st instruction of transaction StorageCreateNewUser SQL request error :", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
@@ -146,11 +146,10 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 	var exist int
 	// создаем текст запроса
 	q := `SELECT 1 FROM users WHERE login = $1 AND password = $2`
-	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную value
+	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную 
 	err = ms.PostgreSQL.QueryRowContext(ctx, q, login, passwHex).Scan(&exist)
 	if err != nil {
 		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
-		return err
 	}
 	if exist != 1 {
 		err = errors.New("login or password not exist")
@@ -279,12 +278,17 @@ func (ms *StorageSQL) StorageGetOrdersList(ctx context.Context, login string) (e
 }
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
-func (ms *StorageSQL) StorageGetUserBalance(login string) (ec models.LoginBalance, err error) {
-	fmt.Println("StorageGetUserBalance login", login)
-	ec = models.LoginBalance{
-		Current:   decimal.NewFromFloatWithExponent(500.505, -2),
-		Withdrawn: decimal.NewFromFloatWithExponent(42, -2),
+func (ms *StorageSQL) StorageGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error) {
+	// создаем текст запроса
+	q := `SELECT current_balance, total_withdrawn FROM balance WHERE login = $1`
+	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную 
+	err = ms.PostgreSQL.QueryRowContext(ctx, q, login).Scan(&ec.Current, &ec.Withdrawn)
+	if err != nil {
+		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
 	}
+	
+	fmt.Println("StorageGetUserBalance login", login)
+
 	return ec, err
 }
 

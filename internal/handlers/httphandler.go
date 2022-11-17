@@ -22,7 +22,7 @@ type Services interface {
 	ServiceAuthorizationCheck(ctx context.Context, dc models.DecodeLoginPair) (err error)
 	ServiceNewOrderLoad(ctx context.Context, login string, order_num string) (err error)
 	ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
-	ServiceGetUserBalance(login string) (ec models.LoginBalance, err error)
+	ServiceGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
 	ServiceNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
 	ServiceGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error)
 }
@@ -170,10 +170,14 @@ func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 
 // получение текущего баланса счёта баллов лояльности пользователя
 func (hn Handler) HandlerGetUserBalance(w http.ResponseWriter, r *http.Request) {
+	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
+	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
+	// освобождаем ресурс
+	defer cancel()
 	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
-	ec, err := hn.service.ServiceGetUserBalance(tokenString["login"].(string))
+	ec, err := hn.service.ServiceGetUserBalance(ctx, tokenString["login"].(string))
 	// 200 - при ошибке nil, 500 - при иных ошибках сервиса
 	switch {
 	case err != nil:
@@ -190,6 +194,10 @@ func (hn Handler) HandlerGetUserBalance(w http.ResponseWriter, r *http.Request) 
 
 // запрос на списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
+	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
+	// ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
+	// освобождаем ресурс
+	// defer cancel()
 	// десериализация тела запроса
 	dc := models.NewWithdrawal{}
 	err := json.NewDecoder(r.Body).Decode(&dc)
@@ -222,6 +230,10 @@ func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
 
 // получение информации о выводе средств с накопительного счёта пользователем
 func (hn Handler) HandlerGetWithdrawalsList(w http.ResponseWriter, r *http.Request) {
+	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
+	// ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
+	// освобождаем ресурс
+	// defer cancel()
 	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
