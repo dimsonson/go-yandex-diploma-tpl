@@ -146,7 +146,7 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 	var exist int
 	// создаем текст запроса
 	q := `SELECT 1 FROM users WHERE login = $1 AND password = $2`
-	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную 
+	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
 	err = ms.PostgreSQL.QueryRowContext(ctx, q, login, passwHex).Scan(&exist)
 	if err != nil {
 		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
@@ -281,12 +281,12 @@ func (ms *StorageSQL) StorageGetOrdersList(ctx context.Context, login string) (e
 func (ms *StorageSQL) StorageGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error) {
 	// создаем текст запроса
 	q := `SELECT current_balance, total_withdrawn FROM balance WHERE login = $1`
-	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную 
+	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
 	err = ms.PostgreSQL.QueryRowContext(ctx, q, login).Scan(&ec.Current, &ec.Withdrawn)
 	if err != nil {
 		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
 	}
-	
+
 	fmt.Println("StorageGetUserBalance login", login)
 
 	return ec, err
@@ -294,24 +294,42 @@ func (ms *StorageSQL) StorageGetUserBalance(ctx context.Context, login string) (
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (ms *StorageSQL) StorageNewWithdrawal(login string, dc models.NewWithdrawal) (err error) {
+
 	fmt.Println("StorageNewWithdrawal login, dc", login, dc)
 	return err
 }
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
-func (ms *StorageSQL) StorageGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error) {
+func (ms *StorageSQL) StorageGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
 	fmt.Println("StorageGetWithdrawalsList login", login)
-	ec = models.WithdrawalsList{
-		{
-			Order: "2377225624",
-			Sum:   decimal.NewFromFloatWithExponent(500.0300, -2),
-			//ProcessedAt: "2020-12-09T16:09:57+03:00",
-		},
-		{
-			Order: "2377225625",
-			Sum:   decimal.NewFromFloatWithExponent(800.5555, -2),
-			//ProcessedAt: "2020-12-09T16:09:57+03:00",
-		},
+	// создаем текст запроса
+	q := `SELECT new_order, login,  "sum", withdrawal_time FROM withdrawals WHERE login = $1 ORDER BY withdrawal_time`
+	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременные
+	rows, err := ms.PostgreSQL.QueryContext(ctx, q, login)
+	if err != nil {
+		log.Println("select StorageGetWithdrawalsList SQL reqest error :", err)
+		return ec, err
+	}
+	defer rows.Close()
+	s := models.WithdrawalsList{}
+	// пишем результат запроса (итерирование по полученному набору строк) в структуру
+	for rows.Next() {
+		err = rows.Scan(&s.Order, &s.Sum, &s.ProcessedAt)
+		if err != nil {
+			log.Println("row by row scan StorageGetWithdrawalsList error :", err)
+			return ec, err
+		}
+		ec = append(ec, s)
+	}
+	// проверяем итерации на ошибки
+	err = rows.Err()
+	if err != nil {
+		log.Println("request StorageGetWithdrawalsList iteration scan error:", err)
+		return ec, err
+	}
+	// проверяем наличие записей
+	if len(ec) == 0 {
+		err = errors.New("no records")
 	}
 	return ec, err
 }

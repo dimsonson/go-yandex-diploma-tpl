@@ -33,7 +33,7 @@ type NewWithdrawal struct {
 }
 
 // информации о выводе средств с накопительного счёта пользователем
-type WithdrawalsList []struct {
+type WithdrawalsList struct {
 	Order       string          `json:"order"`
 	Sum         decimal.Decimal `json:"sum"`
 	ProcessedAt time.Time       `json:"processed_at"`

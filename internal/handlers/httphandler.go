@@ -24,7 +24,7 @@ type Services interface {
 	ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
 	ServiceGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
 	ServiceNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
-	ServiceGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error)
+	ServiceGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
 }
 
 // структура для конструктура обработчика
@@ -231,13 +231,13 @@ func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
 // получение информации о выводе средств с накопительного счёта пользователем
 func (hn Handler) HandlerGetWithdrawalsList(w http.ResponseWriter, r *http.Request) {
 	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
-	// ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
 	// освобождаем ресурс
-	// defer cancel()
+	defer cancel()
 	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
-	ec, err := hn.service.ServiceGetWithdrawalsList(tokenString["login"].(string))
+	ec, err := hn.service.ServiceGetWithdrawalsList(ctx, tokenString["login"].(string))
 	// 200 - при ошибке nil, кодирование, 500 - при иных ошибках сервиса, 204 - если получена ошибка "no records"
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no records"):

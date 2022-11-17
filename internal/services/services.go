@@ -24,7 +24,7 @@ type StorageProvider interface {
 	StorageGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
 	StorageGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
 	StorageNewWithdrawal(login string, dc models.NewWithdrawal) (err error)
-	StorageGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error)
+	StorageGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
 	StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error)
 }
 
@@ -155,9 +155,9 @@ func (sr *Services) ServiceNewWithdrawal(login string, dc models.NewWithdrawal) 
 }
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
-func (sr *Services) ServiceGetWithdrawalsList(login string) (ec models.WithdrawalsList, err error) {
+func (sr *Services) ServiceGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
 	fmt.Println("ServiceGetWithdrawalsList login", login)
-	ec, err = sr.storage.StorageGetWithdrawalsList(login)
+	ec, err = sr.storage.StorageGetWithdrawalsList(ctx, login)
 	return ec, err
 }
 
