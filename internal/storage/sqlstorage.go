@@ -162,7 +162,7 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 // сервис загрузки номера заказа для расчёта
 func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
 	// создаем текст запроса
-	q := `INSERT INTO orders (order_num, login, change_time, status) VALUES ($1, $2, $3, 'PROCESSED')`
+	q := `INSERT INTO orders (order_num, login, change_time, status) VALUES ($1, $2, $3, 'NEW')`
 	// записываем в хранилице login, passwHex
 	_, err = ms.PostgreSQL.ExecContext(ctx, q, orderNum, login, time.Now())
 	// если  есть в хранилище, возвращаем соответствующую ошибку
