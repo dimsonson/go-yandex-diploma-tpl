@@ -158,8 +158,10 @@ func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no orders for this login"):
 		w.WriteHeader(http.StatusNoContent)
+		fmt.Println("Header HandlerGetOrdersList", w.Header().Get("Content-Type"))
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("Header HandlerGetOrdersList", w.Header().Get("Content-Type"))
 	default:
 		fmt.Println("Header HandlerGetOrdersList", w.Header().Get("Content-Type"))
 
