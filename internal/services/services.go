@@ -80,6 +80,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 		log.Println("http.Post:", bPost, err)
 		return err
 	}
+	defer bPost.Body.Close() 
 	fmt.Println("http.Post:", bPost, err)
 	fmt.Println("http.Post Body:", bPost.Body, err)
 
@@ -101,7 +102,8 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			if err != nil {
 				log.Println("http.Get error :", err)
 				return
-			}
+			} 
+			defer rGet.Body.Close()
 			// выполняем дальше, если нет 429 кода ответа
 			if rGet.StatusCode != 429 {
 				// десериализация тела ответа системы
