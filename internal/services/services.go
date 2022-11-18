@@ -113,19 +113,19 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 				return
 			}
 			
-			bytes, err := io.ReadAll(rGet.Body)
+/* 			bytes, err := io.ReadAll(rGet.Body)
 			if err != nil {
 				log.Fatal(err)
-			}
+			} */
 
 		
-			fmt.Println(" ServiceNewOrderLoad rGet.Body ::: ", string(bytes)) // ********************
+		//	fmt.Println(" ServiceNewOrderLoad rGet.Body ::: ", string(bytes)) // ********************
 			
 			dc := models.OrderSatus{}
 			// выполняем дальше, если нет 429 кода ответа
 			if rGet.StatusCode != 429 {
 				// десериализация тела ответа системы
-				err = json.NewDecoder(rGet.Body).Decode(&dc) //`{"order":"521233510","status":"PROCESSED","accrual":729.98}`)).Decode(&dc) //rGet.Body).Decode(&dc)
+				err = json.NewDecoder(rGet.Body).Decode(&dc) //`{"order":"521233510","status":"PROCESSED","accrual":729.98}`)).Decode(&dc) //rGet.Body).Decode(&dc) . //strings.NewReader("")
 				if err != nil {
 					log.Printf("unmarshal error ServiceNewOrderLoad gorutine: %s", err)
 					return
