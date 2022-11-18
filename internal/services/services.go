@@ -120,12 +120,12 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 		
 			fmt.Println(" ServiceNewOrderLoad rGet.Body ::: ", string(bytes)) // ********************
-
+			
+			dc := models.OrderSatus{}
 			// выполняем дальше, если нет 429 кода ответа
 			if rGet.StatusCode != 429 {
 				// десериализация тела ответа системы
-				dc := models.OrderSatus{}
-				err = json.NewDecoder(rGet.Body).Decode(&dc)
+				err = json.NewDecoder(rGet.Body).Decode(&dc) //`{"order":"521233510","status":"PROCESSED","accrual":729.98}`)).Decode(&dc) //rGet.Body).Decode(&dc)
 				if err != nil {
 					log.Printf("unmarshal error ServiceNewOrderLoad gorutine: %s", err)
 					return

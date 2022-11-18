@@ -224,12 +224,14 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 	}
 	{
 		//если сумма начистения в обновлении больше 0, то добавлеям сумму начисления к балансу
+		fmt.Println("dc.Accrual.GreaterThan(decimal.NewFromInt(0)) :::", dc.Accrual.GreaterThan(decimal.NewFromInt(0)))
+		fmt.Println("dc.Accrual) :::", dc.Accrual)
 		if dc.Accrual.GreaterThan(decimal.NewFromInt(0)) {
 			// получаем текущее значение баланса аккаунта
 			var balanceCurrent decimal.Decimal
 			// создаем текст запроса
 			q := `SELECT current_balance FROM balance WHERE login = $1`
-			// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную value
+			// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную 
 			err = ms.PostgreSQL.QueryRow(q, login).Scan(&balanceCurrent)
 			if err != nil {
 				log.Println("select StorageNewOrderUpdate SQL request scan error:", err)
@@ -239,9 +241,9 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 				return err
 			}
 			// добавляем значение начисления к балансу
-			log.Println("balance before:", dc.Accrual)
-			dc.Accrual = dc.Accrual.Add(balanceCurrent)
-			log.Println("balance after:", dc.Accrual)
+			log.Println("balance before:", balanceCurrent)
+			balanceCurrent = dc.Accrual.Add(balanceCurrent)
+			log.Println("balance after:", balanceCurrent)
 			// создаем текст запроса обновление balance
 			q = `UPDATE balance SET current_balance = $2 WHERE login = $1`
 			// записываем в хранилице
