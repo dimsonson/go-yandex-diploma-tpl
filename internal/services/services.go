@@ -22,7 +22,7 @@ type StorageProvider interface {
 	StorageConnectionClose()
 	StorageCreateNewUser(ctx context.Context, login string, passwH string) (err error)
 	StorageAuthorizationCheck(ctx context.Context, login string, passwHex string) (err error)
-	StorageNewOrderLoad(ctx context.Context, login string, order_num string) (err error)
+	StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error)
 	StorageGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
 	StorageGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
 	StorageNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
@@ -71,8 +71,8 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 }
 
 // сервис загрузки пользователем номера заказа для расчёта
-func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order_num string) (err error) {
-	b := fmt.Sprintf("{\"order\":\"%s\"}", order_num)
+func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
+	b := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
 	fmt.Println("b string", b)
 
 	bPost, err := http.Post(sr.calcSys, "application/json", strings.NewReader(b))
@@ -83,7 +83,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 	fmt.Println("http.Post:", bPost, err)
 	fmt.Println("http.Post Body:", bPost.Body, err)
 
-	err = sr.storage.StorageNewOrderLoad(ctx, login, order_num)
+	err = sr.storage.StorageNewOrderLoad(ctx, login, orderNum)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -96,7 +96,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
 			// освобождаем ресурс
 			defer cancel()
-			g := fmt.Sprintf("%s/%s", sr.calcSys, order_num)
+			g := fmt.Sprintf("%s/%s", sr.calcSys, orderNum)
 			rGet, err := http.Get(g)
 			if err != nil {
 				log.Println("http.Get error :", err)
@@ -139,7 +139,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 	}()
 
-	log.Println("ServiceNewOrderLoad login, order_num ", login, order_num)
+	log.Println("ServiceNewOrderLoad login, orderNum ", login, orderNum)
 
 	return err
 }

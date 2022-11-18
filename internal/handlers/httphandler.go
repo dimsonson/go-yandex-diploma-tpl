@@ -20,7 +20,7 @@ import (
 type Services interface {
 	ServiceCreateNewUser(ctx context.Context, dc models.DecodeLoginPair) (err error)
 	ServiceAuthorizationCheck(ctx context.Context, dc models.DecodeLoginPair) (err error)
-	ServiceNewOrderLoad(ctx context.Context, login string, order_num string) (err error)
+	ServiceNewOrderLoad(ctx context.Context, login string, orderNum string) (err error)
 	ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
 	ServiceGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
 	ServiceNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
@@ -67,6 +67,8 @@ func (hn Handler) HandlerNewUserReg(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
+		_, tokenString, _ := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
+		w.Header().Set("Authorization", fmt.Sprintf("Bearer %v", tokenString))
 		w.WriteHeader(http.StatusOK)
 	}
 }
@@ -95,9 +97,7 @@ func (hn Handler) HandlerUserAuth(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		_, tokenString, _ := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
-		fmt.Println("tokenString", tokenString)
 		w.Header().Set("Authorization", fmt.Sprintf("Bearer %v", tokenString))
-		fmt.Println("w.Header()", w.Header())
 		w.WriteHeader(http.StatusOK)
 	}
 }
