@@ -419,7 +419,7 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 func (ms *StorageSQL) StorageGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
 	fmt.Println("StorageGetWithdrawalsList login", login)
 	// создаем текст запроса
-	q := `SELECT new_order, login,  "sum", withdrawal_time FROM withdrawals WHERE login = $1 ORDER BY withdrawal_time`
+	q := `SELECT new_order, "sum", withdrawal_time FROM withdrawals WHERE login = $1 ORDER BY withdrawal_time`
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременные
 	rows, err := ms.PostgreSQL.QueryContext(ctx, q, login)
 	if err != nil {
