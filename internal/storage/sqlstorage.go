@@ -226,7 +226,7 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 		//если сумма начистения в обновлении больше 0, то добавлеям сумму начисления к балансу
 		if dc.Accrual.GreaterThan(decimal.NewFromInt(0)) {
 			// получаем текущее значение баланса аккаунта
-			var balanceCurrent float64
+			var balanceCurrent decimal.Decimal
 			// создаем текст запроса
 			q := `SELECT current_balance FROM balance WHERE login = $1`
 			// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную value
@@ -240,7 +240,7 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 			}
 			// добавляем значение начисления к балансу
 			log.Println("balance before:", dc.Accrual)
-			dc.Accrual.Add(decimal.NewFromFloat(balanceCurrent))
+			dc.Accrual = dc.Accrual.Add(balanceCurrent)
 			log.Println("balance after:", dc.Accrual)
 			// создаем текст запроса обновление balance
 			q = `UPDATE balance SET current_balance = $2 WHERE login = $1`
@@ -377,7 +377,7 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 		log.Println("balanceWithdrawls before:", balanceWithdrawls)
 		balanceWithdrawls = balanceWithdrawls.Add(dc.Sum)
 		log.Println("balanceWithdrawls after:", balanceWithdrawls)
-	
+
 		// вычитаем значение начисления из баланса счета
 		log.Println("balanceCurrent before:", balanceCurrent)
 		balanceCurrent = balanceCurrent.Sub(dc.Sum)

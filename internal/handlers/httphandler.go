@@ -153,7 +153,7 @@ func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 	// получаем слайс структур и ошибку
 	ec, err := hn.service.ServiceGetOrdersList(ctx, tokenString["login"].(string))
 	// устанавливаем заголовок
-	w.Header().Set("content-type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", "application/json")
 	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no orders for this login"):
@@ -179,7 +179,7 @@ func (hn Handler) HandlerGetUserBalance(w http.ResponseWriter, r *http.Request) 
 	// получаем слайс структур и ошибку
 	ec, err := hn.service.ServiceGetUserBalance(ctx, tokenString["login"].(string))
 	// устанавливаем заголовок
-	w.Header().Set("content-type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", "application/json")
 	// 200 - при ошибке nil, 500 - при иных ошибках сервиса
 	switch {
 	case err != nil:
@@ -241,7 +241,7 @@ func (hn Handler) HandlerGetWithdrawalsList(w http.ResponseWriter, r *http.Reque
 	// получаем слайс структур и ошибку
 	ec, err := hn.service.ServiceGetWithdrawalsList(ctx, tokenString["login"].(string))
 	// устанавливаем заголовок
-	w.Header().Set("content-type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", "application/json")
 	// 200 - при ошибке nil, кодирование, 500 - при иных ошибках сервиса, 204 - если получена ошибка "no records"
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no records"):
