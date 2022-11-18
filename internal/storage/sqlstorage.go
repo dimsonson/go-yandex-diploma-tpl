@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
@@ -161,9 +162,9 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 // сервис загрузки номера заказа для расчёта
 func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
 	// создаем текст запроса
-	q := `INSERT INTO orders (order_num, login) VALUES ($1, $2)`
+	q := `INSERT INTO orders (order_num, login, change_time, status) VALUES ($1, $2, $3, 'NEW')`
 	// записываем в хранилице login, passwHex
-	_, err = ms.PostgreSQL.ExecContext(ctx, q, orderNum, login)
+	_, err = ms.PostgreSQL.ExecContext(ctx, q, orderNum, login, time.Now())
 	// если  есть в хранилище, возвращаем соответствующую ошибку
 	var pgErr *pgconn.PgError
 	// проверяем на UniqueViolation и получаем существующий логин для возврата ошибки в зависимости от того чей login
@@ -185,7 +186,7 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 		return err
 	}
 
-	ec:= models.OrdersList{}
+	ec := models.OrdersList{}
 	// создаем текст запроса
 	q = `SELECT * FROM orders WHERE order_num = $1`
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
@@ -195,9 +196,6 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 	}
 
 	log.Println("select OrdersList recorded to database :::", ec)
-
-
-
 
 	if err != nil {
 		return err
@@ -247,7 +245,7 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 			var balanceCurrent decimal.Decimal
 			// создаем текст запроса
 			q := `SELECT current_balance FROM balance WHERE login = $1`
-			// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную 
+			// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
 			err = ms.PostgreSQL.QueryRow(q, login).Scan(&balanceCurrent)
 			if err != nil {
 				log.Println("select StorageNewOrderUpdate SQL request scan error:", err)
