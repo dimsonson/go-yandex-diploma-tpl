@@ -103,7 +103,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			// освобождаем ресурс
 			defer cancel()
 
-			link := fmt.Sprintf("%s/%s", sr.calcSys, orderNum)
+			link := fmt.Sprintf("%s/api/orders/%s", sr.calcSys, orderNum)
 
 			fmt.Println(" ServiceNewOrderLoad link ::: ", link) //*******************
 
