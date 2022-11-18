@@ -67,7 +67,7 @@ func (hn Handler) HandlerNewUserReg(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		_, tokenString, _ := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
-		w.Header().Set("Authorization", "Bearer %v"+tokenString)
+		w.Header().Set("Authorization", "Bearer "+tokenString)
 		w.WriteHeader(http.StatusOK)
 	}
 }
@@ -96,7 +96,7 @@ func (hn Handler) HandlerUserAuth(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		_, tokenString, _ := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
-		w.Header().Set("Authorization", "Bearer %v"+tokenString)
+		w.Header().Set("Authorization", "Bearer "+tokenString)
 		w.WriteHeader(http.StatusOK)
 	}
 }
