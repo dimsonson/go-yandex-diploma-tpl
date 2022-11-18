@@ -82,8 +82,12 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 		return err
 	}
 	defer bPost.Body.Close()
-	fmt.Println("http.Post:", bPost, err)
-	fmt.Println("http.Post Body:", bPost.Body, err)
+	fmt.Println("http.Post:", bPost, err) // ********
+	bytes, err := io.ReadAll(bPost.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("http.Post Body:", string(bytes), err) // ***************************
 
 	err = sr.storage.StorageNewOrderLoad(ctx, login, orderNum)
 	if err != nil {
@@ -101,7 +105,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 			link := fmt.Sprintf("%s/%s", sr.calcSys, orderNum)
 
-			fmt.Println(" ServiceNewOrderLoad link ::: ", link)
+			fmt.Println(" ServiceNewOrderLoad link ::: ", link) //*******************
 
 			rGet, err := http.Get(link)
 			if err != nil {
@@ -116,7 +120,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			}
 
 		
-			fmt.Println(" ServiceNewOrderLoad rGet.Body ::: ", string(bytes))
+			fmt.Println(" ServiceNewOrderLoad rGet.Body ::: ", string(bytes)) // ********************
 
 			// выполняем дальше, если нет 429 кода ответа
 			if rGet.StatusCode != 429 {
