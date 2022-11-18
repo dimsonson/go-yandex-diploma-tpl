@@ -189,7 +189,7 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 	// создаем текст запроса
 	q = `SELECT * FROM orders WHERE order_num = $1`
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
-	err = ms.PostgreSQL.QueryRowContext(ctx, q, orderNum).Scan(&ec.Number, login, &ec.UploadedAt, &ec.Status, &ec.Accrual)
+	_ = ms.PostgreSQL.QueryRowContext(ctx, q, orderNum).Scan(&ec.Number, login, &ec.UploadedAt, &ec.Status, &ec.Accrual)
 	if err != nil {
 		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
 	}
