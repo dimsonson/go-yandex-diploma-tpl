@@ -19,7 +19,7 @@ const UserIDLeght int = 16 //значение должно быть больше
 const SignKey string = "9e9e0b4e6de418b2f84fca35165571c5"
 
 // timeout запроса
-const StorageTimeout = 60 * time.Second
+const StorageTimeout = 600 * time.Second
 
 // количество каналов для воркеров при установке пометку удаленный для sh_urls
 const WorkersCount = 30
