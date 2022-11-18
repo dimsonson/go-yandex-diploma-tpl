@@ -43,7 +43,7 @@ func NewSQLStorage(p string) *StorageSQL {
 	 order_num   text NOT NULL UNIQUE,
 	 login       text NOT NULL,
 	 change_time timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-	 status      text NOT NULL DEFAULT 'REGISTERED',
+	 status      text NOT NULL DEFAULT 'NEW',
 	 accrual     decimal DEFAULT 0	 
 	);
 		
