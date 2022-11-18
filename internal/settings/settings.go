@@ -19,16 +19,7 @@ const UserIDLeght int = 16 //значение должно быть больше
 const SignKey string = "9e9e0b4e6de418b2f84fca35165571c5"
 
 // timeout запроса
-const StorageTimeout = 5 * time.Second
-
-// имя таблицы в базе PosgreSQL
-const SQLTableName = "sh_urls"
-
-// тип для context.WithValue
-type ctxKey string
-
-// ключ для context.WithValue
-const CtxKeyUserID ctxKey = "uid"
+const StorageTimeout = 60 * time.Second
 
 // количество каналов для воркеров при установке пометку удаленный для sh_urls
 const WorkersCount = 30

@@ -161,10 +161,13 @@ func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
+		fmt.Println("Header HandlerGetOrdersList", w.Header().Get("Content-Type"))
+
 		//устанавливаем статус-код 200
 		w.WriteHeader(http.StatusOK)
 		// сериализуем и пишем тело ответа
 		json.NewEncoder(w).Encode(ec)
+
 	}
 }
 
