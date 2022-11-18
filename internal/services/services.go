@@ -97,7 +97,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			// пауза
 			time.Sleep(settings.RequestsTimeout)
 			// создаем ссылку для обноления статуса начислений по заказу
-			linkUpd := "%s/api/orders/%s" + sr.calcSys + orderNum
+			linkUpd := fmt.Sprintf("%s/api/orders/%s", sr.calcSys, orderNum)
 			// отпарвляем запрос на получения обновленных данных по заказу
 			rGet, err := http.Get(linkUpd)
 			if err != nil {
