@@ -155,7 +155,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 					return
 				}
 				// увеличиваем паузу в соотвествии с Retry-After
-				settings.RequestsTimeout = time.Duration(timeout) * time.Second
+				settings.RequestsTimeout = time.Duration(timeout)* 1000 * time.Second
 			}
 			defer rGet.Body.Close()
 		}

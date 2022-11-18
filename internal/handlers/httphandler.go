@@ -153,20 +153,15 @@ func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 	// получаем слайс структур и ошибку
 	ec, err := hn.service.ServiceGetOrdersList(ctx, tokenString["login"].(string))
 	fmt.Println("/api/user/orders ec:::", ec)
-
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
 	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no orders for this login"):
 		w.WriteHeader(http.StatusNoContent)
-		fmt.Println("Header HandlerGetOrdersList", w.Header().Get("Content-Type"))
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("Header HandlerGetOrdersList", w.Header().Get("Content-Type"))
 	default:
-		fmt.Println("Header HandlerGetOrdersList", w.Header().Get("Content-Type"))
-
 		//устанавливаем статус-код 200
 		w.WriteHeader(http.StatusOK)
 		// сериализуем и пишем тело ответа
@@ -204,7 +199,7 @@ func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
 	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
 	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
 	// освобождаем ресурс
-	 defer cancel()
+	defer cancel()
 	// десериализация тела запроса
 	dc := models.NewWithdrawal{}
 	err := json.NewDecoder(r.Body).Decode(&dc)
