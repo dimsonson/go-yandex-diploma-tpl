@@ -112,7 +112,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 			link := fmt.Sprintf("%s/api/orders/%s", sr.calcSys, orderNum)
 
-			fmt.Println(" ServiceNewOrderLoad link ::: ", link) //*******************
+			fmt.Println(" ServiceNewOrderLoad link ::: ", link) //**********
 
 			rGet, err := http.Get(link)
 			if err != nil {
