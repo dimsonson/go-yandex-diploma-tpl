@@ -73,6 +73,13 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 
 // сервис загрузки пользователем номера заказа для расчёта
 func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
+	
+	err = sr.storage.StorageNewOrderLoad(ctx, login, orderNum)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
 	b := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
 	fmt.Println("b string", b)
 
@@ -82,18 +89,16 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 		return err
 	}
 	defer bPost.Body.Close()
+
 	fmt.Println("http.Post:", bPost, err) // ********
+
 	bytes, err := io.ReadAll(bPost.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	fmt.Println("http.Post Body:", string(bytes), err) // ***************************
 
-	err = sr.storage.StorageNewOrderLoad(ctx, login, orderNum)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
 
 	go func() {
 
