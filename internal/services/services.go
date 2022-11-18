@@ -128,7 +128,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 					return
 				}
 			}
-	
+			// если приходит 429 код ответа, увеличиваем таймаут запросов на значение в Retry-After
 			if rGet.StatusCode == 429 {
 				timeout, err := strconv.Atoi(rGet.Header.Get("Retry-After"))
 				if err != nil {
@@ -136,15 +136,12 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 					return
 				}
 				// увеличиваем паузу в соотвествии с Retry-After
-				settings.RequestsTimeout = time.Duration(timeout) * 1000 * time.Second
+				settings.RequestsTimeout = time.Duration(timeout) * 1000 * time.Millisecond
 			}
+			// закрываем ресурс
 			defer rGet.Body.Close()
 		}
-
 	}()
-
-	log.Println("ServiceNewOrderLoad login, orderNum ", login, orderNum)
-
 	return err
 }
 
