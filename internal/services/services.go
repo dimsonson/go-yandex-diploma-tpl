@@ -76,7 +76,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 	b := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
 	fmt.Println("b string", b)
 
-	bPost, err := http.Post(sr.calcSys+"/api/orders/", "application/json", strings.NewReader(b))
+	bPost, err := http.Post(sr.calcSys+"/api/orders", "application/json", strings.NewReader(b))
 	if err != nil {
 		log.Println("http.Post:", bPost, err)
 		return err
