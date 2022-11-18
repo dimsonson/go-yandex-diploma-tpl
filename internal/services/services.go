@@ -71,28 +71,24 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 
 // сервис загрузки пользователем номера заказа для расчёта
 func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
-
+	// запись нового заказа в хранилище
 	err = sr.storage.StorageNewOrderLoad(ctx, login, orderNum)
 	if err != nil {
 		return err
 	}
+	// создание ссылки для запроса в систему начисления баллов
 	insertLink := sr.calcSys + "/api/orders"
-	bodyLink := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
-
-	rPost, err := http.Post(insertLink, "application/json", strings.NewReader(bodyLink))
+	// создание JSON для запроса в систему начисления баллов
+	bodyJSON := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
+	// запрос регистрации заказа в системе расчета баллов
+	rPost, err := http.Post(insertLink, "application/json", strings.NewReader(bodyJSON))
 	if err != nil {
-		log.Println("http.Post:", rPost, err)
+		log.Println("http Post request in ServiceNewOrderLoad error:", err)
 		return err
 	}
+	// освобождаем ресурс
 	defer rPost.Body.Close()
-
-	/* bytes, err := io.ReadAll(rPost.Body)
-	if err != nil {
-		log.Fatal(err)
-	} */
-
-	//fmt.Println("http.Post Body:", string(bytes), err) // *****
-
+	// запуск горутины обновления статуса начсления баллов по заказу
 	go func() {
 
 		for {
