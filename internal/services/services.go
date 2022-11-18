@@ -98,23 +98,18 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			defer cancel()
 			// пауза
 			time.Sleep(settings.RequestsTimeout)
-
-			link := fmt.Sprintf("%s/api/orders/%s", sr.calcSys, orderNum)
-
-			fmt.Println(" ServiceNewOrderLoad link ::: ", link) //**********
-
-			rGet, err := http.Get(link)
+			// создаем ссылку для обноления статуса начислений по заказу
+			linkUpd := fmt.Sprintf("%s/api/orders/%s", sr.calcSys, orderNum)
+			// отпарвляем запрос на получения обновленных данных по заказу
+			rGet, err := http.Get(linkUpd)
 			if err != nil {
-				log.Println("http.Get error :", err)
+				log.Println("gorutine http Get error :", err)
 				return
 			}
-
-			fmt.Println("rGet:::", rGet)
-
-			dc := models.OrderSatus{}
-			// выполняем дальше, если нет 429 кода ответа
-			if rGet.StatusCode != 429 {
+			// выполняем дальше, если 200 код ответа
+			if rGet.StatusCode == 200 {
 				// десериализация тела ответа системы
+				dc := models.OrderSatus{}
 				err = json.NewDecoder(rGet.Body).Decode(&dc)
 				if err != nil {
 					log.Printf("unmarshal error ServiceNewOrderLoad gorutine: %s", err)
@@ -133,10 +128,8 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 					return
 				}
 			}
-			// пауза
-			// time.Sleep(settings.RequestsTimeout)
-
-			if rGet.StatusCode != 429 {
+	
+			if rGet.StatusCode == 429 {
 				timeout, err := strconv.Atoi(rGet.Header.Get("Retry-After"))
 				if err != nil {
 					log.Println("error converting Retry-After to int:", err)
