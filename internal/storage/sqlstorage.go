@@ -184,6 +184,21 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 		err = errors.New("order number from this login already exist")
 		return err
 	}
+
+	ec:= models.OrdersList{}
+	// создаем текст запроса
+	q = `SELECT * FROM orders WHERE order_num = $1`
+	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
+	err = ms.PostgreSQL.QueryRowContext(ctx, q, orderNum).Scan(&ec.Number, login, &ec.UploadedAt, &ec.Status, &ec.Accrual)
+	if err != nil {
+		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
+	}
+
+	log.Println("select OrdersList recorded to database :::", ec)
+
+
+
+
 	if err != nil {
 		return err
 	}
