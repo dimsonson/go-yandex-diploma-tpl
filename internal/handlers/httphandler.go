@@ -152,6 +152,8 @@ func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
 	ec, err := hn.service.ServiceGetOrdersList(ctx, tokenString["login"].(string))
+	fmt.Println("/api/user/orders ec:::", ec)
+
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
 	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
