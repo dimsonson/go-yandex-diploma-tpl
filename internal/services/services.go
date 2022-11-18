@@ -44,7 +44,6 @@ func NewService(s StorageProvider, calcSys string) *Services {
 }
 
 func (sr *Services) ServiceCreateNewUser(ctx context.Context, dc models.DecodeLoginPair) (err error) {
-	fmt.Println("ServiceCreateNewUser dc", dc)
 	// сощдание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
 	if err != nil {
@@ -57,7 +56,6 @@ func (sr *Services) ServiceCreateNewUser(ctx context.Context, dc models.DecodeLo
 }
 
 func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.DecodeLoginPair) (err error) {
-	fmt.Println("ServiceAuthorizationCheck dc", dc)
 	// сощдание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
 	if err != nil {
@@ -99,7 +97,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			// пауза
 			time.Sleep(settings.RequestsTimeout)
 			// создаем ссылку для обноления статуса начислений по заказу
-			linkUpd := fmt.Sprintf("%s/api/orders/%s", sr.calcSys, orderNum)
+			linkUpd := "%s/api/orders/%s" + sr.calcSys + orderNum
 			// отпарвляем запрос на получения обновленных данных по заказу
 			rGet, err := http.Get(linkUpd)
 			if err != nil {
@@ -147,30 +145,29 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
 func (sr *Services) ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
-	fmt.Println("ServiceGetOrdersList login", login)
 	ec, err = sr.storage.StorageGetOrdersList(ctx, login)
-	fmt.Println("ServiceGetOrdersList login, ec :::", login, ec)
+	// возвращаем структуру и ошибку
 	return ec, err
 }
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
 func (sr *Services) ServiceGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error) {
-	fmt.Println("ServiceGetUserBalance login", login)
 	ec, err = sr.storage.StorageGetUserBalance(ctx, login)
+	// возвращаем структуру и ошибку
 	return ec, err
 }
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (sr *Services) ServiceNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
-	fmt.Println("ServiceNewWithdrawal login, dc", login, dc)
 	err = sr.storage.StorageNewWithdrawal(ctx, login, dc)
+	// возвращаем ошибку
 	return err
 }
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
 func (sr *Services) ServiceGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
-	fmt.Println("ServiceGetWithdrawalsList login", login)
 	ec, err = sr.storage.StorageGetWithdrawalsList(ctx, login)
+	// возвращаем структуру и ошибку
 	return ec, err
 }
 

@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -68,7 +67,7 @@ func (hn Handler) HandlerNewUserReg(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		_, tokenString, _ := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
-		w.Header().Set("Authorization", fmt.Sprintf("Bearer %v", tokenString))
+		w.Header().Set("Authorization", "Bearer %v"+tokenString)
 		w.WriteHeader(http.StatusOK)
 	}
 }
@@ -97,7 +96,7 @@ func (hn Handler) HandlerUserAuth(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		_, tokenString, _ := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
-		w.Header().Set("Authorization", fmt.Sprintf("Bearer %v", tokenString))
+		w.Header().Set("Authorization", "Bearer %v"+tokenString)
 		w.WriteHeader(http.StatusOK)
 	}
 }
@@ -152,7 +151,6 @@ func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
 	ec, err := hn.service.ServiceGetOrdersList(ctx, tokenString["login"].(string))
-	fmt.Println("/api/user/orders ec:::", ec)
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
 	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
