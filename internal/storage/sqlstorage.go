@@ -184,6 +184,7 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 		return err
 	}
 	if err != nil {
+		log.Println("insert StorageNewOrderLoad error :", err)
 		return err
 	}
 	return err

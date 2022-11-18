@@ -15,7 +15,6 @@ import (
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
-	
 )
 
 // интерфейс методов хранилища
@@ -76,29 +75,24 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 	err = sr.storage.StorageNewOrderLoad(ctx, login, orderNum)
 	if err != nil {
-		log.Println(err)
 		return err
 	}
+	insertLink := sr.calcSys + "/api/orders"
+	bodyLink := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
 
-	b := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
-	fmt.Println("b string", b)
-
-	bPost, err := http.Post(sr.calcSys+"/api/orders", "application/json", strings.NewReader(b))
+	rPost, err := http.Post(insertLink, "application/json", strings.NewReader(bodyLink))
 	if err != nil {
-		log.Println("http.Post:", bPost, err)
+		log.Println("http.Post:", rPost, err)
 		return err
 	}
-	defer bPost.Body.Close()
+	defer rPost.Body.Close()
 
-	fmt.Println("http.Post:", bPost, err) // ********
-
-	bytes, err := io.ReadAll(bPost.Body)
+	/* bytes, err := io.ReadAll(rPost.Body)
 	if err != nil {
 		log.Fatal(err)
-	}
+	} */
 
-	fmt.Println("http.Post Body:", string(bytes), err) // *****
-
+	//fmt.Println("http.Post Body:", string(bytes), err) // *****
 
 	go func() {
 
@@ -122,12 +116,11 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 			fmt.Println("rGet:::", rGet)
 
-			
 			dc := models.OrderSatus{}
 			// выполняем дальше, если нет 429 кода ответа
 			if rGet.StatusCode != 429 {
 				// десериализация тела ответа системы
-				err = json.NewDecoder(rGet.Body).Decode(&dc) 
+				err = json.NewDecoder(rGet.Body).Decode(&dc)
 				if err != nil {
 					log.Printf("unmarshal error ServiceNewOrderLoad gorutine: %s", err)
 					return
@@ -155,7 +148,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 					return
 				}
 				// увеличиваем паузу в соотвествии с Retry-After
-				settings.RequestsTimeout = time.Duration(timeout)* 1000 * time.Second
+				settings.RequestsTimeout = time.Duration(timeout) * 1000 * time.Second
 			}
 			defer rGet.Body.Close()
 		}
@@ -169,7 +162,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
 func (sr *Services) ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
-	fmt.Println("ServiceGetOrdersList login", login, )
+	fmt.Println("ServiceGetOrdersList login", login)
 	ec, err = sr.storage.StorageGetOrdersList(ctx, login)
 	fmt.Println("ServiceGetOrdersList login, ec :::", login, ec)
 	return ec, err
