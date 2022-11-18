@@ -159,7 +159,7 @@ func (hn Handler) HandlerGetOrdersList(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
-		// сериализация тела запроса
+		// устанавливаем заголовок
 		w.Header().Set("content-type", "application/json; charset=utf-8")
 		//устанавливаем статус-код 200
 		w.WriteHeader(http.StatusOK)

@@ -159,11 +159,11 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 }
 
 // сервис загрузки номера заказа для расчёта
-func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, order_num string) (err error) {
+func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
 	// создаем текст запроса
 	q := `INSERT INTO orders (order_num, login) VALUES ($1, $2)`
 	// записываем в хранилице login, passwHex
-	_, err = ms.PostgreSQL.ExecContext(ctx, q, order_num, login)
+	_, err = ms.PostgreSQL.ExecContext(ctx, q, orderNum, login)
 	// если  есть в хранилище, возвращаем соответствующую ошибку
 	var pgErr *pgconn.PgError
 	// проверяем на UniqueViolation и получаем существующий логин для возврата ошибки в зависимости от того чей login
@@ -172,7 +172,7 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 		// создаем текст запроса
 		q := `SELECT login FROM orders WHERE order_num = $1`
 		// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную value
-		err = ms.PostgreSQL.QueryRowContext(ctx, q, order_num).Scan(&existLogin)
+		err = ms.PostgreSQL.QueryRowContext(ctx, q, orderNum).Scan(&existLogin)
 		if err != nil {
 			log.Println("select StorageNewOrderLoad SQL request scan error:", err)
 			return err
