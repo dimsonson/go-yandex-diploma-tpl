@@ -73,7 +73,7 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 
 // сервис загрузки пользователем номера заказа для расчёта
 func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
-	
+
 	err = sr.storage.StorageNewOrderLoad(ctx, login, orderNum)
 	if err != nil {
 		log.Println(err)
@@ -122,13 +122,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 			fmt.Println("rGet:::", rGet)
 
-			/* 			bytes, err := io.ReadAll(rGet.Body)
-			   			if err != nil {
-			   				log.Fatal(err)
-			   			} */
-
-			//	fmt.Println(" ServiceNewOrderLoad rGet.Body ::: ", string(bytes)) // ********************
-
+			
 			dc := models.OrderSatus{}
 			// выполняем дальше, если нет 429 кода ответа
 			if rGet.StatusCode != 429 {
