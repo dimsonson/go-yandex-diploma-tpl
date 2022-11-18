@@ -127,7 +127,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			// выполняем дальше, если нет 429 кода ответа
 			if rGet.StatusCode != 429 {
 				// десериализация тела ответа системы
-				err = json.NewDecoder(rGet.Body).Decode(&dc) //`{"order":"521233510","status":"PROCESSED","accrual":729.98}`)).Decode(&dc) //rGet.Body).Decode(&dc) . //strings.NewReader("")
+				err = json.NewDecoder(rGet.Body).Decode(&dc) 
 				if err != nil {
 					log.Printf("unmarshal error ServiceNewOrderLoad gorutine: %s", err)
 					return
