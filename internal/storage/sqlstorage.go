@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
@@ -160,9 +159,9 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 
 // сервис загрузки номера заказа для расчёта без обноления статуса
 func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
-	// создаем текст запроса
+	// создаем текст запроса, часть значений дефолтные в DB Postgre (см конструктор базы)
 	q := `INSERT INTO orders (order_num, login) VALUES ($1, $2)`
-	// записываем в хранилице login, passwHex
+	// записываем в хранилице orderNum, login
 	_, err = ms.PostgreSQL.ExecContext(ctx, q, orderNum, login)
 	// если  есть в хранилище, возвращаем соответствующую ошибку
 	var pgErr *pgconn.PgError
@@ -202,7 +201,7 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 	{
 		// создаем текст запроса обновление orders
 		q := `UPDATE orders SET status = $3, accrual = $4 WHERE login = $1 AND order_num = $2 AND status != $3`
-		// записываем в хранилице login, passwHex
+		// записываем в хранилице поля из структуры и аргумента
 		ordersUpd, err := ms.PostgreSQL.Exec(q, login, dc.Order, dc.Status, dc.Accrual)
 		// проверяем на nil от panic
 		var ordersRows int64
@@ -221,12 +220,9 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 			}
 			return err
 		}
-		fmt.Println("update database:::", login, dc.Order, dc.Status, dc.Accrual)
 	}
 	{
 		//если сумма начистения в обновлении больше 0, то добавлеям сумму начисления к балансу
-		fmt.Println("dc.Accrual.GreaterThan(decimal.NewFromInt(0)) :::", dc.Accrual.GreaterThan(decimal.NewFromInt(0)))
-		fmt.Println("dc.Accrual) :::", dc.Accrual)
 		if dc.Accrual.GreaterThan(decimal.NewFromInt(0)) {
 			// получаем текущее значение баланса аккаунта
 			var balanceCurrent decimal.Decimal
@@ -318,9 +314,6 @@ func (ms *StorageSQL) StorageGetUserBalance(ctx context.Context, login string) (
 	if err != nil {
 		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
 	}
-
-	fmt.Println("StorageGetUserBalance login", login)
-
 	return ec, err
 }
 
@@ -381,7 +374,7 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 		balanceWithdrawls = balanceWithdrawls.Add(dc.Sum)
 		log.Println("balanceWithdrawls after:", balanceWithdrawls)
 
-		// вычитаем значение начисления из баланса счета
+		// вычитаем значение списания из баланса счета
 		log.Println("balanceCurrent before:", balanceCurrent)
 		balanceCurrent = balanceCurrent.Sub(dc.Sum)
 		log.Println("balanceCurrent after:", balanceCurrent)
@@ -418,7 +411,6 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
 func (ms *StorageSQL) StorageGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
-	fmt.Println("StorageGetWithdrawalsList login", login)
 	// создаем текст запроса
 	q := `SELECT new_order, "sum", withdrawal_time FROM withdrawals WHERE login = $1 ORDER BY withdrawal_time`
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременные
