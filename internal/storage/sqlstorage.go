@@ -162,9 +162,9 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 // сервис загрузки номера заказа для расчёта без обноления статуса
 func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
 	// создаем текст запроса
-	q := `INSERT INTO orders (order_num, login, change_time, status) VALUES ($1, $2, $3, 'NEW')`
+	q := `INSERT INTO orders (order_num, login) VALUES ($1, $2)`
 	// записываем в хранилице login, passwHex
-	_, err = ms.PostgreSQL.ExecContext(ctx, q, orderNum, login, time.Now())
+	_, err = ms.PostgreSQL.ExecContext(ctx, q, orderNum, login)
 	// если  есть в хранилище, возвращаем соответствующую ошибку
 	var pgErr *pgconn.PgError
 	// проверяем на UniqueViolation и получаем существующий логин для возврата ошибки в зависимости от того чей login
@@ -185,18 +185,6 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 		err = errors.New("order number from this login already exist")
 		return err
 	}
-
-/* 	ec := models.OrdersList{}
-	// создаем текст запроса
-	q = `SELECT order_num, login, change_time, status FROM orders WHERE order_num = $1`
-	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
-	_ = ms.PostgreSQL.QueryRowContext(ctx, q, orderNum).Scan(&ec.Number, login, &ec.UploadedAt, &ec.Status, &ec.Accrual)
-	if err != nil {
-		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
-	}
-
-	log.Println("select OrdersList recorded to database :::", ec) */
-
 	if err != nil {
 		return err
 	}
