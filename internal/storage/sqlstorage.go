@@ -236,6 +236,7 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 			}
 			return err
 		}
+		fmt.Println("update database:::", login, dc.Order, dc.Status, dc.Accrual)
 	}
 	{
 		//если сумма начистения в обновлении больше 0, то добавлеям сумму начисления к балансу
