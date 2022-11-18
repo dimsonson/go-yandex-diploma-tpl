@@ -78,7 +78,7 @@ func (ms *StorageSQL) StorageConnectionClose() {
 	ms.PostgreSQL.Close()
 }
 
-// добавление нового пользователя в хранилище
+// добавление нового пользователя в хранилище, запись в две таблицы в транзакции
 func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, passwHex string) (err error) {
 	// объявляем транзакцию
 	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
@@ -159,7 +159,7 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 	return err
 }
 
-// сервис загрузки номера заказа для расчёта
+// сервис загрузки номера заказа для расчёта без обноления статуса
 func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
 	// создаем текст запроса
 	q := `INSERT INTO orders (order_num, login, change_time, status) VALUES ($1, $2, $3, 'NEW')`
@@ -186,7 +186,7 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 		return err
 	}
 
-	ec := models.OrdersList{}
+/* 	ec := models.OrdersList{}
 	// создаем текст запроса
 	q = `SELECT order_num, login, change_time, status FROM orders WHERE order_num = $1`
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
@@ -195,7 +195,7 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
 	}
 
-	log.Println("select OrdersList recorded to database :::", ec)
+	log.Println("select OrdersList recorded to database :::", ec) */
 
 	if err != nil {
 		return err
@@ -203,7 +203,7 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 	return err
 }
 
-// сервис обновление заказа для расчёта
+// сервис обновление статуса и начслений заказа для расчёта
 func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error) {
 	// объявляем транзакцию
 	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
