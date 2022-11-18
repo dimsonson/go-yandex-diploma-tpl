@@ -102,7 +102,9 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
 			// освобождаем ресурс
 			defer cancel()
-
+			// пауза
+			time.Sleep(settings.RequestsTimeout)
+			
 			link := fmt.Sprintf("%s/api/orders/%s", sr.calcSys, orderNum)
 
 			fmt.Println(" ServiceNewOrderLoad link ::: ", link) //*******************
@@ -112,15 +114,16 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 				log.Println("http.Get error :", err)
 				return
 			}
-			
-/* 			bytes, err := io.ReadAll(rGet.Body)
-			if err != nil {
-				log.Fatal(err)
-			} */
 
-		
-		//	fmt.Println(" ServiceNewOrderLoad rGet.Body ::: ", string(bytes)) // ********************
-			
+			fmt.Println("rGet:::", rGet)
+
+			/* 			bytes, err := io.ReadAll(rGet.Body)
+			   			if err != nil {
+			   				log.Fatal(err)
+			   			} */
+
+			//	fmt.Println(" ServiceNewOrderLoad rGet.Body ::: ", string(bytes)) // ********************
+
 			dc := models.OrderSatus{}
 			// выполняем дальше, если нет 429 кода ответа
 			if rGet.StatusCode != 429 {
@@ -144,7 +147,8 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 				}
 			}
 			// пауза
-			time.Sleep(settings.RequestsTimeout)
+			// time.Sleep(settings.RequestsTimeout)
+
 			if rGet.StatusCode != 429 {
 				timeout, err := strconv.Atoi(rGet.Header.Get("Retry-After"))
 				if err != nil {
