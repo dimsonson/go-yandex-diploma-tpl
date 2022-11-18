@@ -112,8 +112,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 				log.Println("http.Get error :", err)
 				return
 			}
-			defer rGet.Body.Close()
-
+			
 			bytes, err := io.ReadAll(rGet.Body)
 			if err != nil {
 				log.Fatal(err)
@@ -155,6 +154,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 				// увеличиваем паузу в соотвествии с Retry-After
 				settings.RequestsTimeout = time.Duration(timeout) * time.Second
 			}
+			defer rGet.Body.Close()
 		}
 
 	}()
