@@ -104,7 +104,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			defer cancel()
 			// пауза
 			time.Sleep(settings.RequestsTimeout)
-			
+
 			link := fmt.Sprintf("%s/api/orders/%s", sr.calcSys, orderNum)
 
 			fmt.Println(" ServiceNewOrderLoad link ::: ", link) //*******************
@@ -170,8 +170,9 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
 func (sr *Services) ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
-	fmt.Println("ServiceGetOrdersList login", login)
+	fmt.Println("ServiceGetOrdersList login", login, )
 	ec, err = sr.storage.StorageGetOrdersList(ctx, login)
+	fmt.Println("ServiceGetOrdersList login, ec :::", login, ec)
 	return ec, err
 }
 
