@@ -188,7 +188,7 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 
 	ec := models.OrdersList{}
 	// создаем текст запроса
-	q = `SELECT * FROM orders WHERE order_num = $1`
+	q = `SELECT order_num, login, change_time, status FROM orders WHERE order_num = $1`
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
 	_ = ms.PostgreSQL.QueryRowContext(ctx, q, orderNum).Scan(&ec.Number, login, &ec.UploadedAt, &ec.Status, &ec.Accrual)
 	if err != nil {
