@@ -25,7 +25,7 @@ func init() {
 const (
 	defServAddr   = "localhost:8000"
 	defDBlink     = "postgres://postgres:1818@localhost:5432/gophm" // новую базу
-	defCalcSysURL = "http://localhost:8080/api/orders"
+	defCalcSysURL = "http://localhost:8080"
 )
 
 func main() {
