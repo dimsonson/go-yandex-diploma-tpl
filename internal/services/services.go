@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -80,7 +81,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 		log.Println("http.Post:", bPost, err)
 		return err
 	}
-	defer bPost.Body.Close() 
+	defer bPost.Body.Close()
 	fmt.Println("http.Post:", bPost, err)
 	fmt.Println("http.Post Body:", bPost.Body, err)
 
@@ -97,20 +98,33 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
 			// освобождаем ресурс
 			defer cancel()
-			g := fmt.Sprintf("%s/%s", sr.calcSys, orderNum)
-			rGet, err := http.Get(g)
+
+			link := fmt.Sprintf("%s/%s", sr.calcSys, orderNum)
+
+			fmt.Println(" ServiceNewOrderLoad link ::: ", link)
+
+			rGet, err := http.Get(link)
 			if err != nil {
 				log.Println("http.Get error :", err)
 				return
-			} 
+			}
 			defer rGet.Body.Close()
+
+			bytes, err := io.ReadAll(rGet.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+		
+			fmt.Println(" ServiceNewOrderLoad rGet.Body ::: ", string(bytes))
+
 			// выполняем дальше, если нет 429 кода ответа
 			if rGet.StatusCode != 429 {
 				// десериализация тела ответа системы
 				dc := models.OrderSatus{}
 				err = json.NewDecoder(rGet.Body).Decode(&dc)
 				if err != nil {
-					log.Printf("Unmarshal error: %s", err)
+					log.Printf("unmarshal error ServiceNewOrderLoad gorutine: %s", err)
 					return
 				}
 
