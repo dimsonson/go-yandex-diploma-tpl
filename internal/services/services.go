@@ -97,7 +97,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 		log.Fatal(err)
 	}
 
-	fmt.Println("http.Post Body:", string(bytes), err) // ***************************
+	fmt.Println("http.Post Body:", string(bytes), err) // *****
 
 
 	go func() {
