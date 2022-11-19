@@ -183,8 +183,8 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 			log.Printf("select StorageNewOrderLoad SQL request: %s", err)
 			return err
 		}
-		log.Printf("select StorageNewOrderLoad SQL request : %s", err)
 		err = errors.New("order number from this login already exist")
+		log.Printf("select StorageNewOrderLoad SQL request : %s", err)
 		return err
 	}
 	if err != nil {
