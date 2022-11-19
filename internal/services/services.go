@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
+	//"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,6 +14,8 @@ import (
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
+	//"github.com/rs/zerolog"
+    "github.com/rs/zerolog/log"
 )
 
 // интерфейс методов хранилища
@@ -47,7 +49,7 @@ func (sr *Services) ServiceCreateNewUser(ctx context.Context, dc models.DecodeLo
 	// сощдание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
 	if err != nil {
-		log.Println("hex conversion in ServiceCreateNewUser error :", err)
+		log.Printf("hex conversion in ServiceCreateNewUser error :%s", err)
 		return err
 	}
 	// передача пары логин:пароль в хранилище
@@ -59,7 +61,7 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 	// сощдание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
 	if err != nil {
-		log.Println("hex conversion in ServiceCreateNewUser error :", err)
+		log.Printf("hex conversion in ServiceCreateNewUser error :%s", err)
 		return err
 	}
 	// передача пары логин:пароль в хранилище
@@ -81,7 +83,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 	// запрос регистрации заказа в системе расчета баллов
 	rPost, err := http.Post(insertLink, "application/json", strings.NewReader(bodyJSON))
 	if err != nil {
-		log.Println("http Post request in ServiceNewOrderLoad error:", err)
+		log.Printf("http Post request in ServiceNewOrderLoad error:%s", err)
 		return err
 	}
 	// освобождаем ресурс
@@ -101,7 +103,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			// отпарвляем запрос на получения обновленных данных по заказу
 			rGet, err := http.Get(linkUpd)
 			if err != nil {
-				log.Println("gorutine http Get error :", err)
+				log.Printf("gorutine http Get error :%s", err)
 				return
 			}
 			// выполняем дальше, если 200 код ответа
@@ -116,7 +118,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 				err = sr.storage.StorageNewOrderUpdate(ctx, login, dc)
 				if err != nil {
-					log.Println("sr.storage.StorageNewOrderUpdate error :", err)
+					log.Printf("sr.storage.StorageNewOrderUpdate error :%s", err)
 					return
 				}
 				// логируем
@@ -130,7 +132,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			if rGet.StatusCode == 429 {
 				timeout, err := strconv.Atoi(rGet.Header.Get("Retry-After"))
 				if err != nil {
-					log.Println("error converting Retry-After to int:", err)
+					log.Print("error converting Retry-After to int:%s", err)
 					return
 				}
 				// увеличиваем паузу в соотвествии с Retry-After

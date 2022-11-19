@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
+	//"log"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
@@ -12,6 +12,8 @@ import (
 	"github.com/jackc/pgerrcode"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/shopspring/decimal"
+	//"github.com/rs/zerolog"
+    "github.com/rs/zerolog/log"
 )
 
 // структура хранилища
@@ -28,7 +30,7 @@ func NewSQLStorage(p string) *StorageSQL {
 	// открываем базу данных
 	db, err := sql.Open("pgx", p)
 	if err != nil {
-		log.Println("database opening error:", settings.ColorRed, err, settings.ColorReset)
+		log.Printf("database opening error:%s", settings.ColorRed, err, settings.ColorReset)
 	}
 	// создаем текст запроса
 	q := `CREATE TABLE IF NOT EXISTS users
@@ -64,7 +66,7 @@ func NewSQLStorage(p string) *StorageSQL {
 	// создаем таблицу в SQL базе, если не существует
 	_, err = db.ExecContext(ctx, q)
 	if err != nil {
-		log.Println("request NewSQLStorage to sql db returned error:", settings.ColorRed, err, settings.ColorReset)
+		log.Printf("request NewSQLStorage to sql db returned error:%s", settings.ColorRed, err, settings.ColorReset)
 	}
 	return &StorageSQL{
 		PostgreSQL: db,
@@ -81,7 +83,7 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 	// объявляем транзакцию
 	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
 	if err != nil {
-		log.Println("error StorageNewOrderUpdate tx.Begin : ", err)
+		log.Printf("error StorageNewOrderUpdate tx.Begin :%s", err)
 		return err
 	}
 	defer tx.Rollback()
@@ -95,15 +97,15 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 		switch {
 		case errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation:
 			err = errors.New("login exist")
-			log.Println("insert 1st instruction of transaction StorageCreateNewUser SQL UniqueViolation error :", err)
+			log.Printf("insert 1st instruction of transaction StorageCreateNewUser SQL UniqueViolation error :%s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				log.Printf("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 			}
 			return err
 		case err != nil && pgErr != nil && pgErr.Code != pgerrcode.UniqueViolation:
-			log.Println("insert 1st instruction of transaction StorageCreateNewUser SQL request error :", err)
+			log.Print("insert 1st instruction of transaction StorageCreateNewUser SQL request error :%s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				log.Printf("unable StorageCreateNewUser to rollback:", rollbackErr)
 			}
 			return err
 		default:
@@ -119,15 +121,15 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 		switch {
 		case errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation:
 			err = errors.New("login exist")
-			log.Println("insert 2st instruction of transaction StorageCreateNewUser SQL UniqueViolation error :", err)
+			log.Printf("insert 2st instruction of transaction StorageCreateNewUser SQL UniqueViolation error :%s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				log.Printf("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 			}
 			return err
 		case err != nil && pgErr != nil && pgErr.Code != pgerrcode.UniqueViolation:
-			log.Println("insert 2st instruction of transaction StorageCreateNewUser SQL request error :", err)
+			log.Printf("insert 2st instruction of transaction StorageCreateNewUser SQL request error :%s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				log.Printf("unable StorageCreateNewUser to rollback: %s", rollbackErr)
 			}
 			return err
 		default:
@@ -135,7 +137,7 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 	}
 	// сохраняем изменения
 	if err := tx.Commit(); err != nil {
-		log.Println("error StorageNewOrderUpdate tx.Commit : ", err)
+		log.Printf("error StorageNewOrderUpdate tx.Commit : %s", err)
 	}
 	return err
 }
@@ -148,10 +150,12 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
 	err = ms.PostgreSQL.QueryRowContext(ctx, q, login, passwHex).Scan(&exist)
 	if err != nil {
-		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
+		log.Printf("select StorageAuthorizationCheck SQL request scan error:%s", err)
 	}
 	if exist != 1 {
+
 		err = errors.New("login or password not exist")
+		log.Printf("select StorageAuthorizationCheck SQL: %s", err)
 		return err
 	}
 	return err
@@ -173,18 +177,20 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 		// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную value
 		err = ms.PostgreSQL.QueryRowContext(ctx, q, orderNum).Scan(&existLogin)
 		if err != nil {
-			log.Println("select StorageNewOrderLoad SQL request scan error:", err)
+			log.Printf("select StorageNewOrderLoad SQL request scan error:%s", err)
 			return err
 		}
 		if existLogin != login {
 			err = errors.New("the same order number was loaded by another customer")
+			log.Printf("select StorageNewOrderLoad SQL request: %s", err)
 			return err
 		}
+		log.Printf("select StorageNewOrderLoad SQL request : %s", err)
 		err = errors.New("order number from this login already exist")
 		return err
 	}
 	if err != nil {
-		log.Println("insert StorageNewOrderLoad error :", err)
+		log.Printf("insert StorageNewOrderLoad error :%s", err)
 		return err
 	}
 	return err
@@ -195,7 +201,7 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 	// объявляем транзакцию
 	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
 	if err != nil {
-		log.Println("error StorageNewOrderUpdate tx.Begin : ", err)
+		log.Printf("error StorageNewOrderUpdate tx.Begin : %s", err)
 		return err
 	}
 	defer tx.Rollback()
@@ -215,9 +221,9 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 		// логируем и возвращаем соответствующую ошибку
 		if err != nil || ordersRows != 1 {
 			err = errors.New("error or row not found for order udpate")
-			log.Println("update SQL request StorageNewOrderUpdate error:", err)
+			log.Printf("update SQL request StorageNewOrderUpdate error:%s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				log.Printf("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 			}
 			return err
 		}
@@ -232,16 +238,16 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 			// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
 			err = ms.PostgreSQL.QueryRow(q, login).Scan(&balanceCurrent)
 			if err != nil {
-				log.Println("select StorageNewOrderUpdate SQL request scan error:", err)
+				log.Printf("select StorageNewOrderUpdate SQL request scan error:%s", err)
 				if rollbackErr := tx.Rollback(); rollbackErr != nil {
-					log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+					log.Printf("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 				}
 				return err
 			}
 			// добавляем значение начисления к балансу
-			log.Println("balance before:", balanceCurrent)
+			log.Printf("balance before: %s", balanceCurrent)
 			balanceCurrent = dc.Accrual.Add(balanceCurrent)
-			log.Println("balance after:", balanceCurrent)
+			log.Printf("balance after: %s", balanceCurrent)
 			// создаем текст запроса обновление balance
 			q = `UPDATE balance SET current_balance = $2 WHERE login = $1`
 			// записываем в хранилице
@@ -257,9 +263,9 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 			// если не ок логируем и возвращаем соответствующую ошибку
 			if err != nil && balanceRows != 1 {
 				err = errors.New("error or row not found for balance udpate")
-				log.Println("update SQL request StorageNewOrderUpdate error:", err)
+				log.Printf("update SQL request StorageNewOrderUpdate error:%s", err)
 				if rollbackErr := tx.Rollback(); rollbackErr != nil {
-					log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+					log.Printf("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 				}
 				return err
 			}
@@ -267,7 +273,7 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 	}
 	// сохраняем изменения
 	if err := tx.Commit(); err != nil {
-		log.Println("error StorageNewOrderUpdate tx.Commit : ", err)
+		log.Printf("error StorageNewOrderUpdate tx.Commit %s: ", err)
 	}
 	return err
 }
@@ -279,7 +285,7 @@ func (ms *StorageSQL) StorageGetOrdersList(ctx context.Context, login string) (e
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременные
 	rows, err := ms.PostgreSQL.QueryContext(ctx, q, login)
 	if err != nil {
-		log.Println("select StorageGetOrdersList SQL reqest error :", err)
+		log.Printf("select StorageGetOrdersList SQL reqest error %s:", err)
 		return ec, err
 	}
 	defer rows.Close()
@@ -288,7 +294,7 @@ func (ms *StorageSQL) StorageGetOrdersList(ctx context.Context, login string) (e
 	for rows.Next() {
 		err = rows.Scan(&s.Number, &s.Status, &s.Accrual, &s.UploadedAt)
 		if err != nil {
-			log.Println("row by row scan StorageGetOrdersList error :", err)
+			log.Printf("row by row scan StorageGetOrdersList error :%s", err)
 			return ec, err
 		}
 		ec = append(ec, s)
@@ -296,11 +302,12 @@ func (ms *StorageSQL) StorageGetOrdersList(ctx context.Context, login string) (e
 	// проверяем итерации на ошибки
 	err = rows.Err()
 	if err != nil {
-		log.Println("request StorageGetOrdersList iteration scan error:", err)
+		log.Printf("request StorageGetOrdersList iteration scan error:%s", err)
 		return ec, err
 	}
 	// проверяем наличие записей
 	if len(ec) == 0 {
+		log.Printf("request StorageGetOrdersList len == 0: %s", err)
 		err = errors.New("no orders for this login")
 	}
 	return ec, err
@@ -313,7 +320,7 @@ func (ms *StorageSQL) StorageGetUserBalance(ctx context.Context, login string) (
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
 	err = ms.PostgreSQL.QueryRowContext(ctx, q, login).Scan(&ec.Current, &ec.Withdrawn)
 	if err != nil {
-		log.Println("select StorageAuthorizationCheck SQL request scan error:", err)
+		log.Printf("select StorageAuthorizationCheck SQL request scan error:%s", err)
 	}
 	return ec, err
 }
@@ -323,7 +330,7 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 	// объявляем транзакцию
 	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
 	if err != nil {
-		log.Println("error StorageNewOrderUpdate tx.Begin : ", err)
+		log.Printf("error StorageNewOrderUpdate tx.Begin : %s", err)
 		return err
 	}
 	defer tx.Rollback()
@@ -335,13 +342,14 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 		// логируем и возвращаем соответствующую ошибку
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			log.Printf("error StorageNewWithdrawal : %s", err)
 			err = errors.New("new order number already exist")
 			return err
 		}
 		if err != nil {
-			log.Println("update SQL request StorageNewOrderUpdate error:", err)
+			log.Printf("update SQL request StorageNewOrderUpdate error: %s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				log.Printf("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 			}
 			return err
 		}
@@ -356,29 +364,30 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 		// делаем запрос в SQL, получаем строку и пишем результат запроса в пременные
 		err = ms.PostgreSQL.QueryRow(q, login).Scan(&balanceCurrent, &balanceWithdrawls)
 		if err != nil {
-			log.Println("select StorageNewOrderUpdate SQL request scan error:", err)
+			log.Printf("select StorageNewOrderUpdate SQL request scan error:%s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				log.Printf("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 			}
 			return err
 		}
 		// проверяем наличие сресдтв для списания
 		if dc.Sum.GreaterThan(balanceCurrent) {
 			err = errors.New("insufficient funds")
+			log.Printf("error StorageNewWithdrawal : %s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				log.Print("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 			}
 			return err
 		}
 		// добавляем значение списания к балансу списаний
-		log.Println("balanceWithdrawls before:", balanceWithdrawls)
+		log.Printf("balanceWithdrawls before: %s", balanceWithdrawls)
 		balanceWithdrawls = balanceWithdrawls.Add(dc.Sum)
-		log.Println("balanceWithdrawls after:", balanceWithdrawls)
+		log.Printf("balanceWithdrawls after: %s", balanceWithdrawls)
 
 		// вычитаем значение списания из баланса счета
-		log.Println("balanceCurrent before:", balanceCurrent)
+		log.Printf("balanceCurrent before: %s", balanceCurrent)
 		balanceCurrent = balanceCurrent.Sub(dc.Sum)
-		log.Println("balanceCurrent after:", balanceCurrent)
+		log.Printf("balanceCurrent after: %s", balanceCurrent)
 
 		// создаем текст запроса обновление balance
 		q = `UPDATE balance SET current_balance = $2, total_withdrawn =$3 WHERE login = $1`
@@ -395,9 +404,9 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 		// если не ок логируем и возвращаем соответствующую ошибку
 		if err != nil && balanceRows != 1 {
 			err = errors.New("error or row not found for balance udpate")
-			log.Println("update SQL request StorageNewOrderUpdate error:", err)
+			log.Printf("update SQL request StorageNewOrderUpdate error:%s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Println("unable StorageCreateNewUser to rollback:", rollbackErr)
+				log.Printf("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 			}
 			return err
 		}
@@ -405,7 +414,7 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 	}
 	// сохраняем изменения
 	if err := tx.Commit(); err != nil {
-		log.Println("error StorageNewOrderUpdate tx.Commit : ", err)
+		log.Printf("error StorageNewOrderUpdate tx.Commit : %s", err)
 	}
 	return err
 }
@@ -417,7 +426,7 @@ func (ms *StorageSQL) StorageGetWithdrawalsList(ctx context.Context, login strin
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременные
 	rows, err := ms.PostgreSQL.QueryContext(ctx, q, login)
 	if err != nil {
-		log.Println("select StorageGetWithdrawalsList SQL reqest error :", err)
+		log.Printf("select StorageGetWithdrawalsList SQL reqest error :%s", err)
 		return ec, err
 	}
 	defer rows.Close()
@@ -426,7 +435,7 @@ func (ms *StorageSQL) StorageGetWithdrawalsList(ctx context.Context, login strin
 	for rows.Next() {
 		err = rows.Scan(&s.Order, &s.Sum, &s.ProcessedAt)
 		if err != nil {
-			log.Println("row by row scan StorageGetWithdrawalsList error :", err)
+			log.Printf("row by row scan StorageGetWithdrawalsList error :%s", err)
 			return ec, err
 		}
 		ec = append(ec, s)
@@ -434,12 +443,13 @@ func (ms *StorageSQL) StorageGetWithdrawalsList(ctx context.Context, login strin
 	// проверяем итерации на ошибки
 	err = rows.Err()
 	if err != nil {
-		log.Println("request StorageGetWithdrawalsList iteration scan error:", err)
+		log.Printf("request StorageGetWithdrawalsList iteration scan error:%s", err)
 		return ec, err
 	}
 	// проверяем наличие записей
 	if len(ec) == 0 {
 		err = errors.New("no records")
+		log.Printf("request StorageGetWithdrawalsList len == 0: %s", err)
 	}
 	return ec, err
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	//"log"
 	"net/http"
 	"os"
 
@@ -12,6 +12,8 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/storage"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/shopspring/decimal"
 )
 
@@ -19,6 +21,8 @@ func init() {
 	decimal.MarshalJSONWithoutQuotes = true
 	decimal.DivisionPrecision = 2
 	decimal.ExpMaxIterations = 1000
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "2006/01/02 15:04:05"})
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 }
 
 // переменные по умолчанию
@@ -38,9 +42,9 @@ func main() {
 	h := handlers.NewHandler(srvs)
 	r := httprouter.NewRouter(h)
 	// запускаем сервер
-	log.Println("accruals calculation service URL:", settings.ColorGreen, calcSys, settings.ColorReset)
-	log.Println("starting http server on:", settings.ColorBlue, addr, settings.ColorReset)
-	log.Fatal(http.ListenAndServe(addr, r))
+	log.Print("accruals calculation service URL:", settings.ColorGreen, calcSys, settings.ColorReset)
+	log.Print("starting http server on:", settings.ColorBlue, addr, settings.ColorReset)
+	log.Fatal().Err(http.ListenAndServe(addr, r))
 }
 
 // парсинг флагов и валидация переменных окружения
@@ -54,19 +58,19 @@ func flagsVars() (dlink string, calcSys string, addr string) {
 	// проверяем наличие переменной окружения, если ее нет или она не валидна, то используем значение из флага
 	addr, ok := os.LookupEnv("RUN_ADDRESS")
 	if !ok || !govalidator.IsURL(addr) || addr == "" {
-		log.Println("eviroment variable RUN_ADDRESS is empty or has wrong value ", addr)
+		log.Print("eviroment variable RUN_ADDRESS is empty or has wrong value ", addr)
 		addr = *addrFlag
 	}
 	// проверяем наличие переменной окружения, если ее нет или она не валидна, то используем значение из флага
 	calcSys, ok = os.LookupEnv("ACCRUAL_SYSTEM_ADDRESS")
 	if !ok || !govalidator.IsURL(calcSys) || calcSys == "" {
-		log.Println("eviroment variable ACCRUAL_SYSTEM_ADDRESS is empty or has wrong value ", calcSys)
+		log.Print("eviroment variable ACCRUAL_SYSTEM_ADDRESS is empty or has wrong value ", calcSys)
 		calcSys = *calcSysFlag
 	}
 	// проверяем наличие переменной окружения, если ее нет или она не валидна, то используем значение из флага
 	dlink, ok = os.LookupEnv("DATABASE_URI")
 	if !ok {
-		log.Println("eviroment variable DATABASE_URI is not exist", dlink)
+		log.Print("eviroment variable DATABASE_URI is not exist", dlink)
 		dlink = *dlinkFlag
 	}
 
@@ -77,9 +81,9 @@ func flagsVars() (dlink string, calcSys string, addr string) {
 func newStrorageProvider(dlink string) (s services.StorageProvider) {
 	// проверяем если переменная SQL url не пустая, логгируем
 	if dlink == "" {
-		log.Println("server may not properly start with "+settings.ColorRed+"database DSN empty", settings.ColorReset)
+		log.Print("server may not properly start with "+settings.ColorRed+"database DSN empty", settings.ColorReset)
 	}
 	s = storage.NewSQLStorage(dlink)
-	log.Println("server will start with data storage "+settings.ColorYellow+"in PostgreSQL:", dlink, settings.ColorReset)
+	log.Print("server will start with data storage "+settings.ColorYellow+"in PostgreSQL:", dlink, settings.ColorReset)
 	return s
 }

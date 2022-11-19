@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
+	//"log"
 	"net/http"
 	"strings"
 
@@ -13,6 +13,8 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/go-chi/jwtauth"
 	_ "github.com/shopspring/decimal"
+	//"github.com/rs/zerolog"
+    "github.com/rs/zerolog/log"
 )
 
 // интерфейс методов бизнес логики
@@ -41,6 +43,7 @@ func NewHandler(s Services) *Handler {
 // обработка всех остальных запросов и возврат кода 400
 func (hn Handler) IncorrectRequests(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "request incorrect", http.StatusBadRequest)
+	log.Printf("request incorrect probably no endpoint for path")
 }
 
 // регистрация пользователя: HTTPзаголовок Authorization
@@ -82,7 +85,7 @@ func (hn Handler) HandlerUserAuth(w http.ResponseWriter, r *http.Request) {
 	dc := models.DecodeLoginPair{}
 	err := json.NewDecoder(r.Body).Decode(&dc)
 	if err != nil {
-		log.Printf("Unmarshal error: %s", err)
+		log.Printf("unmarshal error HandlerUserAuth: %s", err)
 		http.Error(w, "invalid JSON structure received", http.StatusBadRequest)
 		return
 	}
@@ -111,6 +114,7 @@ func (hn Handler) HandlerNewOrderLoad(w http.ResponseWriter, r *http.Request) {
 	bs, err := io.ReadAll(r.Body)
 	// обрабатываем ошибку
 	if err != nil {
+		log.Printf("boby read HandlerNewOrderLoad error :%s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -118,6 +122,7 @@ func (hn Handler) HandlerNewOrderLoad(w http.ResponseWriter, r *http.Request) {
 	// проверяем на алгоритм Луна, если не ок, возвращаем 422
 	err = goluhn.Validate(b)
 	if err != nil {
+		log.Printf("luhn algo chack error :%s", err)
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -202,7 +207,7 @@ func (hn Handler) HandlerNewWithdrawal(w http.ResponseWriter, r *http.Request) {
 	dc := models.NewWithdrawal{}
 	err := json.NewDecoder(r.Body).Decode(&dc)
 	if err != nil {
-		log.Printf("Unmarshal error: %s", err)
+		log.Printf("unmarshal error HandlerNewWithdrawal: %s", err)
 		http.Error(w, "invalid JSON structure received", http.StatusBadRequest)
 		return
 	}
