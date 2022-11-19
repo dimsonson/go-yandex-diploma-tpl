@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
 	//"log"
 	"net/http"
 	"strconv"
@@ -14,8 +15,9 @@ import (
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
+
 	//"github.com/rs/zerolog"
-    "github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/log"
 )
 
 // интерфейс методов хранилища
@@ -71,6 +73,12 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 
 // сервис загрузки пользователем номера заказа для расчёта
 func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
+	// проверка up and running внешнего сервиса
+	_, err = http.Get(sr.calcSys)
+	if err != nil {
+		log.Printf("remoute service error:%s", err)
+		return
+	}
 	// запись нового заказа в хранилище
 	err = sr.storage.StorageNewOrderLoad(ctx, login, orderNum)
 	if err != nil {
