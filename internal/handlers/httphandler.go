@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	//"log"
 	"net/http"
 	"strings"
 
@@ -13,8 +12,8 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/go-chi/jwtauth"
 	_ "github.com/shopspring/decimal"
-	//"github.com/rs/zerolog"
-    "github.com/rs/zerolog/log"
+
+	"github.com/rs/zerolog/log"
 )
 
 // интерфейс методов бизнес логики

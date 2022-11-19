@@ -4,16 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	//"log"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/rs/zerolog/log"
 	"github.com/shopspring/decimal"
-	//"github.com/rs/zerolog"
-    "github.com/rs/zerolog/log"
 )
 
 // структура хранилища
