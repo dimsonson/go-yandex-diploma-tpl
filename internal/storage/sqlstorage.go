@@ -30,7 +30,7 @@ func NewSQLStorage(p string) *StorageSQL {
 	// открываем базу данных
 	db, err := sql.Open("pgx", p)
 	if err != nil {
-		log.Printf("database opening error:%s", settings.ColorRed, err, settings.ColorReset)
+		log.Printf("database opening error:%s%s%s", settings.ColorRed, err, settings.ColorReset)
 	}
 	// создаем текст запроса
 	q := `CREATE TABLE IF NOT EXISTS users
@@ -66,7 +66,7 @@ func NewSQLStorage(p string) *StorageSQL {
 	// создаем таблицу в SQL базе, если не существует
 	_, err = db.ExecContext(ctx, q)
 	if err != nil {
-		log.Printf("request NewSQLStorage to sql db returned error:%s", settings.ColorRed, err, settings.ColorReset)
+		log.Printf("request NewSQLStorage to sql db returned error:%s%s%s", settings.ColorRed, err, settings.ColorReset)
 	}
 	return &StorageSQL{
 		PostgreSQL: db,
@@ -103,9 +103,9 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 			}
 			return err
 		case err != nil && pgErr != nil && pgErr.Code != pgerrcode.UniqueViolation:
-			log.Print("insert 1st instruction of transaction StorageCreateNewUser SQL request error :%s", err)
+			log.Printf("insert 1st instruction of transaction StorageCreateNewUser SQL request error :%s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Printf("unable StorageCreateNewUser to rollback:", rollbackErr)
+				log.Printf("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 			}
 			return err
 		default:
@@ -375,7 +375,7 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 			err = errors.New("insufficient funds")
 			log.Printf("error StorageNewWithdrawal : %s", err)
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Print("unable StorageCreateNewUser to rollback:%s", rollbackErr)
+				log.Printf("unable StorageCreateNewUser to rollback:%s", rollbackErr)
 			}
 			return err
 		}

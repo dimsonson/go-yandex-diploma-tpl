@@ -132,7 +132,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			if rGet.StatusCode == 429 {
 				timeout, err := strconv.Atoi(rGet.Header.Get("Retry-After"))
 				if err != nil {
-					log.Print("error converting Retry-After to int:%s", err)
+					log.Printf("error converting Retry-After to int:%s", err)
 					return
 				}
 				// увеличиваем паузу в соотвествии с Retry-After
