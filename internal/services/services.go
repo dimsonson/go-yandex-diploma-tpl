@@ -74,11 +74,12 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 // сервис загрузки пользователем номера заказа для расчёта
 func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
 	// проверка up and running внешнего сервиса
-	_, err = http.Get(sr.calcSys)
+	resp, err := http.Get(sr.calcSys)
 	if err != nil {
-		log.Printf("remoute service error:%s", err)
+		log.Printf("remoute service error: %s", err)
 		return
 	}
+	defer resp.Body.Close()
 	// запись нового заказа в хранилище
 	err = sr.storage.StorageNewOrderLoad(ctx, login, orderNum)
 	if err != nil {
