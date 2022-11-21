@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"net/http/httptest"
 	"testing"
 
@@ -17,8 +18,8 @@ import (
 
 //go:generate mockgen -destination=mock_service_test.go -package=handlers_test . Services
 
-func TestHandler_HandlerNewUserReg(t *testing.T) {
-	type mockBehavior func(s *mock_service.MockServices, dc models.DecodeLoginPair)
+func TestHandler_HandlerNewUserReg2(t *testing.T) {
+	type mockBehavior func(s *mock_service.MockServices, ctx context.Context, dc models.DecodeLoginPair)
 	//type mockBehavior func(s *mock_storage.MockStorageProvider, login string, passwH string) //(err error)
 
 	// определяем структуру теста
@@ -44,10 +45,10 @@ func TestHandler_HandlerNewUserReg(t *testing.T) {
 					"password": "12345"
 				}`,
 			dc: models.DecodeLoginPair{Login: "dimma", Password: "12345"},
-			mockBehavior: func(s *mock_service.MockServices, dc models.DecodeLoginPair) {
-				s.EXPECT().ServiceCreateNewUser(nil, dc).Return(nil)
+			mockBehavior: func(s *mock_service.MockServices, ctx context.Context, dc models.DecodeLoginPair) {
+				s.EXPECT().ServiceCreateNewUser(ctx, dc).Return(nil)
 			},
-			expectedStatusCode:   200,
+			expectedStatusCode:   400,
 			expectedResponseBody: "Authorization",
 			expectedContentType:  "text/plain; charset=utf-8",
 		},
@@ -62,15 +63,16 @@ func TestHandler_HandlerNewUserReg(t *testing.T) {
 			// Init Dependencies
 			srvc := mock_service.NewMockServices(c)
 			//stor := mock_storage.NewMockStorageProvider(c)
-			tCase.mockBehavior(srvc, tCase.dc)
+			tCase.mockBehavior(srvc, nil, tCase.dc)
 			//service := &services.Services{Storage: stor, CalcSys: "http://localhost:8080"}
 			handler := NewHandler(srvc)
 			// Test Server
 			rout := chi.NewRouter()
 			rout.Post("/api/user/register", handler.HandlerNewUserReg)
+			//запрос
+			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
 			// create Test Request
 			w := httptest.NewRecorder()
-			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
 			// perform Test Request
 			rout.ServeHTTP(w, request)
 			// Assert results
