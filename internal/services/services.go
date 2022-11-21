@@ -17,6 +17,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+//go:generate mockgen -source=services.go -destination=mocks/mock.go
+
 // интерфейс методов хранилища
 type StorageProvider interface {
 	StorageConnectionClose()

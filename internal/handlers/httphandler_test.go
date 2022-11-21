@@ -1,27 +1,23 @@
 package handlers_test
 
 import (
-	"context"
-	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
-
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
+	mock_service "github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers/mocks"
+	gomock "github.com/golang/mock/gomock"
 	//"github.com/dimsonson/go-yandex-diploma-tpl/internal/httprouter"
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/storage"
-	"github.com/go-chi/chi/v5"
-	"github.com/stretchr/testify/assert"
 )
 
+//go:generate mockgen -destination=mock_service_test.go -package=handlers_test . Services
 
+func TestHandler_HandlerNewUserReg(t *testing.T) {
+	type mockBehavior func(s *mock_service.MockServices)
+	
+	mockCtl := gomock.NewController(t)
+	//mockService := NewHandler(mockCtl)
 
+	//var servs services.Services
+	//servs = &MockServices{}
 
-func TestHandlerCreateShortURL(t *testing.T) {
 	// определяем структуру теста
 	type request struct {
 		metod    string
@@ -62,11 +58,19 @@ func TestHandlerCreateShortURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			//создаем тестирующий запрос
-			request := httptest.NewRequest(tt.req.metod, tt.req.endpoint, nil)
+			//request := httptest.NewRequest(tt.req.metod, tt.req.endpoint, nil)
 			// создаём новый Recorder
-			w := httptest.NewRecorder()
+			//w := httptest.NewRecorder()
 			// определяем хендлер
-            h := http.HandlerFunc(handlers.NewHandler()
+			//h := http.HandlerFunc(NewHandler(mockCtl))
+
+			/* 	srvs:=struct{
+				storage StorageProvider
+				calcSys string
+			}{
+				storage: nil,
+				calcSys: "",
+			})) */
 
 			/* //создаем тестирующий запрос
 			req := httptest.NewRequest(tt.req.metod, "/", strings.NewReader("http://localhost:8080/"))
@@ -115,6 +119,7 @@ func TestHandlerCreateShortURL(t *testing.T) {
 	}
 }
 
+/*
 func TestHandlerCreateShortJSON(t *testing.T) {
 	// определяем структуру теста
 	type want struct {
@@ -476,7 +481,7 @@ func TestHandlerGetShortURL(t *testing.T) {
 			/* 	ctx := context.Background()
 			ctx, cancel := context.WithTimeout(ctx, settings.StorageTimeout)
 			defer cancel()
-			*/
+
 
 			// определяем хендлер
 			s := storage.NewMapStorage(make(map[string]string), make(map[string]string), make(map[string]bool))
@@ -508,3 +513,4 @@ func TestHandlerGetShortURL(t *testing.T) {
 		})
 	}
 }
+*/
