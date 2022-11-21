@@ -39,7 +39,7 @@ func TestHandler_HandlerNewUserReg(t *testing.T) {
 			expectedContentType:  "text/plain; charset=utf-8",
 		},
 	}
-	s := &mocks.Service{}
+	s := &mocks.Services{}
 	h := NewHandler(s)
 
 	for _, tCase := range tests {
