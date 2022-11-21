@@ -18,46 +18,57 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+
+
+
 func TestHandlerCreateShortURL(t *testing.T) {
 	// определяем структуру теста
-	type want struct {
-		code        int
-		response    string
-		contentType string
-	}
-
-	type req struct {
+	type request struct {
 		metod    string
 		endpoint string
 		body     string
 	}
 
+	type want struct {
+		code         int
+		responseBody string
+		contentType  string
+	}
+
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
 		name string
-		req  req
+		req  request
 		want want
 	}{
 		// определяем все тесты
 		{
-			name: "POST #1",
-			req: req{
+			name: "positive test POST",
+			req: request{
 				metod:    "POST",
 				endpoint: "/",
 				body:     "https://pkg.go.dev/io#Reader",
 			},
 			want: want{
-				code:        201,
-				response:    "/0",
-				contentType: "text/plain; charset=utf-8",
+				code:         201,
+				responseBody: "/0",
+				contentType:  "text/plain; charset=utf-8",
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		// запускаем каждый тест
 		t.Run(tt.name, func(t *testing.T) {
 
 			//создаем тестирующий запрос
+			request := httptest.NewRequest(tt.req.metod, tt.req.endpoint, nil)
+			// создаём новый Recorder
+			w := httptest.NewRecorder()
+			// определяем хендлер
+            h := http.HandlerFunc(handlers.NewHandler()
+
+			/* //создаем тестирующий запрос
 			req := httptest.NewRequest(tt.req.metod, "/", strings.NewReader("http://localhost:8080/"))
 
 			// создаём новый Recorder
@@ -99,7 +110,7 @@ func TestHandlerCreateShortURL(t *testing.T) {
 			// заголовок ответа
 			if resp.Header.Get("Content-Type") != tt.want.contentType {
 				t.Errorf("Expected Content-Type %s, got %s", tt.want.contentType, resp.Header.Get("Content-Type"))
-			}
+			} */
 		})
 	}
 }
