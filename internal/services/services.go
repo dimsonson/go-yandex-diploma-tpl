@@ -34,8 +34,8 @@ type StorageProvider interface {
 
 // структура конструктора бизнес логики
 type Services struct {
-	storage StorageProvider
-	calcSys string
+	Storage StorageProvider
+	CalcSys string
 }
 
 // конструктор бизнес логики
@@ -54,7 +54,7 @@ func (sr *Services) ServiceCreateNewUser(ctx context.Context, dc models.DecodeLo
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = sr.storage.StorageCreateNewUser(ctx, dc.Login, passwHex)
+	err = sr.Storage.StorageCreateNewUser(ctx, dc.Login, passwHex)
 	return err
 }
 
@@ -66,26 +66,26 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = sr.storage.StorageAuthorizationCheck(ctx, dc.Login, passwHex)
+	err = sr.Storage.StorageAuthorizationCheck(ctx, dc.Login, passwHex)
 	return err
 }
 
 // сервис загрузки пользователем номера заказа для расчёта
 func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
 	// проверка up and running внешнего сервиса
-	rsp, err := http.Get(sr.calcSys)
+	rsp, err := http.Get(sr.CalcSys)
 	if err != nil {
 		log.Printf("remoute service error: %s", err)
 		return
 	}
 	defer rsp.Body.Close()
 	// запись нового заказа в хранилище
-	err = sr.storage.StorageNewOrderLoad(ctx, login, orderNum)
+	err = sr.Storage.StorageNewOrderLoad(ctx, login, orderNum)
 	if err != nil {
 		return err
 	}
 	// создание ссылки для запроса в систему начисления баллов
-	insertLink := sr.calcSys + "/api/orders"
+	insertLink := sr.CalcSys + "/api/orders"
 	// создание JSON для запроса в систему начисления баллов
 	bodyJSON := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
 	// запрос регистрации заказа в системе расчета баллов
@@ -107,7 +107,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			// пауза
 			time.Sleep(settings.RequestsTimeout)
 			// создаем ссылку для обноления статуса начислений по заказу
-			linkUpd := fmt.Sprintf("%s/api/orders/%s", sr.calcSys, orderNum)
+			linkUpd := fmt.Sprintf("%s/api/orders/%s", sr.CalcSys, orderNum)
 			// отпарвляем запрос на получения обновленных данных по заказу
 			rGet, err := http.Get(linkUpd)
 			if err != nil {
@@ -124,7 +124,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 					return
 				}
 
-				err = sr.storage.StorageNewOrderUpdate(ctx, login, dc)
+				err = sr.Storage.StorageNewOrderUpdate(ctx, login, dc)
 				if err != nil {
 					log.Printf("sr.storage.StorageNewOrderUpdate error :%s", err)
 					return
@@ -155,28 +155,28 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
 func (sr *Services) ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
-	ec, err = sr.storage.StorageGetOrdersList(ctx, login)
+	ec, err = sr.Storage.StorageGetOrdersList(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
 func (sr *Services) ServiceGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error) {
-	ec, err = sr.storage.StorageGetUserBalance(ctx, login)
+	ec, err = sr.Storage.StorageGetUserBalance(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (sr *Services) ServiceNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
-	err = sr.storage.StorageNewWithdrawal(ctx, login, dc)
+	err = sr.Storage.StorageNewWithdrawal(ctx, login, dc)
 	// возвращаем ошибку
 	return err
 }
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
 func (sr *Services) ServiceGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
-	ec, err = sr.storage.StorageGetWithdrawalsList(ctx, login)
+	ec, err = sr.Storage.StorageGetWithdrawalsList(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
