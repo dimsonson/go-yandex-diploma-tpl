@@ -7,8 +7,8 @@ import (
 
 	mock_service "github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers/mocks"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
-	mock_storage "github.com/dimsonson/go-yandex-diploma-tpl/internal/services/mocks"
+	//"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
+	//mock_storage "github.com/dimsonson/go-yandex-diploma-tpl/internal/services/mocks"
 	"github.com/go-chi/chi/v5"
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -72,10 +72,10 @@ func TestHandler_HandlerNewUserReg(t *testing.T) {
 			defer c.Finish()
 			// Init Dependencies
 			srvc := mock_service.NewMockServices(c)
-			stor := mock_storage.NewMockStorageProvider(c)
+			//stor := mock_storage.NewMockStorageProvider(c)
 			tCase.mockBehavior(srvc, tCase.req.dc)
-			service := &services.Services{Storage: stor, CalcSys: "http://localhost:8080"}
-			handler := NewHandler(service)
+			//service := &services.Services{Storage: stor, CalcSys: "http://localhost:8080"}
+			handler := NewHandler(srvc)
 			// Test Server
 			rout := chi.NewRouter()
 			rout.Post("/api/user/register", handler.HandlerNewUserReg)
