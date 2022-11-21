@@ -7,6 +7,7 @@ import (
 
 	mock_service "github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers/mocks"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
+
 	//"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
 	//mock_storage "github.com/dimsonson/go-yandex-diploma-tpl/internal/services/mocks"
 	"github.com/go-chi/chi/v5"
@@ -21,46 +22,34 @@ func TestHandler_HandlerNewUserReg(t *testing.T) {
 	//type mockBehavior func(s *mock_storage.MockStorageProvider, login string, passwH string) //(err error)
 
 	// определяем структуру теста
-	type request struct {
-		metod     string
-		endpoint  string
-		inputBody string
-		dc        models.DecodeLoginPair
-	}
-
-	type expected struct {
-		StatusCode   int
-		ResponseBody string
-		contentType  string
-	}
-
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
-		name         string
-		req          request
-		mockBehavior mockBehavior
-		expected     expected
+		name                 string
+		inputMetod           string
+		inputEndpoint        string
+		inputBody            string
+		dc                   models.DecodeLoginPair
+		mockBehavior         mockBehavior
+		expectedStatusCode   int
+		expectedResponseBody string
+		expectedContentType  string
 	}{
 		// определяем все тесты
 		{
-			name: "positive test user registration",
-			req: request{
-				metod:    "POST",
-				endpoint: "/api/user/register",
-				inputBody: `{
+			name:          "positive test user registration",
+			inputMetod:    "POST",
+			inputEndpoint: "/api/user/register",
+			inputBody: `{
 					"login": "dimma",
 					"password": "12345"
 				}`,
-				dc: models.DecodeLoginPair{Login: "dimma", Password: "12345"},
-			},
+			dc: models.DecodeLoginPair{Login: "dimma", Password: "12345"},
 			mockBehavior: func(s *mock_service.MockServices, dc models.DecodeLoginPair) {
 				s.EXPECT().ServiceCreateNewUser(nil, dc).Return(nil)
 			},
-			expected: expected{
-				StatusCode:   200,
-				ResponseBody: "Authorization",
-				contentType:  "text/plain; charset=utf-8",
-			},
+			expectedStatusCode:   200,
+			expectedResponseBody: "Authorization",
+			expectedContentType:  "text/plain; charset=utf-8",
 		},
 	}
 
@@ -73,7 +62,7 @@ func TestHandler_HandlerNewUserReg(t *testing.T) {
 			// Init Dependencies
 			srvc := mock_service.NewMockServices(c)
 			//stor := mock_storage.NewMockStorageProvider(c)
-			tCase.mockBehavior(srvc, tCase.req.dc)
+			tCase.mockBehavior(srvc, tCase.dc)
 			//service := &services.Services{Storage: stor, CalcSys: "http://localhost:8080"}
 			handler := NewHandler(srvc)
 			// Test Server
@@ -81,12 +70,12 @@ func TestHandler_HandlerNewUserReg(t *testing.T) {
 			rout.Post("/api/user/register", handler.HandlerNewUserReg)
 			// create Test Request
 			w := httptest.NewRecorder()
-			request := httptest.NewRequest(tCase.req.metod, tCase.req.endpoint, bytes.NewBufferString(tCase.req.inputBody))
+			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
 			// perform Test Request
 			rout.ServeHTTP(w, request)
 			// Assert results
-			assert.Equal(t, tCase.expected.StatusCode, w.Code)
-			assert.Contains(t, tCase.expected.ResponseBody, w.Body.String())
+			assert.Equal(t, tCase.expectedStatusCode, w.Code)
+			assert.Contains(t, tCase.expectedResponseBody, w.Body.String())
 		})
 	}
 }
