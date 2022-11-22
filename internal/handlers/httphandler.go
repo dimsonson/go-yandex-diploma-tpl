@@ -10,7 +10,7 @@ import (
 	"github.com/ShiraazMoollatjie/goluhn"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
-	"github.com/go-chi/jwtauth"
+	"github.com/go-chi/jwtauth/v5"
 	_ "github.com/shopspring/decimal"
 
 	"github.com/rs/zerolog/log"
@@ -121,7 +121,7 @@ func (hn Handler) HandlerNewOrderLoad(w http.ResponseWriter, r *http.Request) {
 	// проверяем на алгоритм Луна, если не ок, возвращаем 422
 	err = goluhn.Validate(b)
 	if err != nil {
-		log.Printf("luhn algo chack error :%s", err)
+		log.Printf("luhn algo check error :%s", err)
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}

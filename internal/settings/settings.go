@@ -3,7 +3,7 @@ package settings
 import (
 	"time"
 
-	"github.com/go-chi/jwtauth"
+	"github.com/go-chi/jwtauth/v5"
 )
 
 // ключ подписи
