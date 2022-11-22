@@ -25,14 +25,14 @@ type StorageProvider interface {
 
 	StorageCreateNewUser(ctx context.Context, login string, passwH string) (err error)
 	StorageAuthorizationCheck(ctx context.Context, login string, passwHex string) (err error)
+	
 	StorageGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
-
-	StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error)
 	StorageGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
-	StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error)
-
-	StorageNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
 	StorageGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
+	
+	StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error)
+	StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error)
+	StorageNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
 }
 
 // структура конструктора бизнес логики
