@@ -370,7 +370,7 @@ func (ms *StorageSQL) NewWithdrawal(ctx context.Context, login string, dc models
 		}
 	}
 	{
-		{	// создаем текст запроса обновление withdrawals
+		{ // создаем текст запроса обновление withdrawals
 			q := `INSERT INTO withdrawals (new_order, login, "sum") VALUES ($1, $2, $3)`
 			// записываем в хранилице login, passwHex
 			_, err := ms.PostgreSQL.Exec(q, dc.Order, login, dc.Sum)
@@ -404,7 +404,6 @@ func (ms *StorageSQL) NewWithdrawal(ctx context.Context, login string, dc models
 	}
 	return err
 }
-
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
 func (ms *StorageSQL) WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
