@@ -37,7 +37,7 @@ func main() {
 	// инициализируем конструкторы
 	// конструкторы хранилища
 	storage := newStrorageProvider(dlink)
-	defer storage.Close()
+	defer storage.ConnectionClose()
 	// конструкторы User
 	serviceUser := services.NewUserService(storage)
 	handlerUser := handlers.NewUserHandler(serviceUser)

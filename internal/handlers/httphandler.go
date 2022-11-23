@@ -18,21 +18,21 @@ import (
 
 // интерфейс методов бизнес логики User
 type User interface {
-	CreateNew(ctx context.Context, dc models.DecodeLoginPair) (err error)
+	Create(ctx context.Context, dc models.DecodeLoginPair) (err error)
 	CheckAuthorization(ctx context.Context, dc models.DecodeLoginPair) (err error)
 }
 
 // интерфейс методов бизнес логики Order
 type Order interface {
 	Load(ctx context.Context, login string, orderNum string) (err error)
-	GetList(ctx context.Context, login string) (ec []models.OrdersList, err error)
+	List(ctx context.Context, login string) (ec []models.OrdersList, err error)
 }
 
 // интерфейс методов бизнес логики type Balance
 type Balance interface {
-	GetBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
+	Status(ctx context.Context, login string) (ec models.LoginBalance, err error)
 	NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
-	GetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
+	WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
 }
 
 // структура для конструктура обработчика User
@@ -77,7 +77,7 @@ func (handler UserHandler) IncorrectRequests(w http.ResponseWriter, r *http.Requ
 }
 
 // регистрация пользователя: HTTPзаголовок Authorization
-func (handler UserHandler) CreateNew(w http.ResponseWriter, r *http.Request) {
+func (handler UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
 	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
 	// освобождаем ресурс
@@ -91,7 +91,7 @@ func (handler UserHandler) CreateNew(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// пишем пару логин:пароль в хранилище
-	err = handler.User.CreateNew(ctx, dc)
+	err = handler.User.Create(ctx, dc)
 	// если логин существует возвращаем статус 409, если иная ошибка - 500, если без ошибок -200
 	switch {
 	case err != nil && strings.Contains(err.Error(), "login exist"):
@@ -177,7 +177,7 @@ func (handler OrderHandler) Load(w http.ResponseWriter, r *http.Request) {
 }
 
 // получение списка загруженных пользователем номеров заказов, статусов их обработки и информации о начислениях
-func (handler OrderHandler) GetList(w http.ResponseWriter, r *http.Request) {
+func (handler OrderHandler) List(w http.ResponseWriter, r *http.Request) {
 	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
 	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
 	// освобождаем ресурс
@@ -185,7 +185,7 @@ func (handler OrderHandler) GetList(w http.ResponseWriter, r *http.Request) {
 	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
-	ec, err := handler.Order.GetList(ctx, tokenString["login"].(string))
+	ec, err := handler.Order.List(ctx, tokenString["login"].(string))
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
 	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
@@ -204,7 +204,7 @@ func (handler OrderHandler) GetList(w http.ResponseWriter, r *http.Request) {
 }
 
 // получение текущего баланса счёта баллов лояльности пользователя
-func (handler BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
+func (handler BalanceHandler) Status(w http.ResponseWriter, r *http.Request) {
 	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
 	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
 	// освобождаем ресурс
@@ -212,7 +212,7 @@ func (handler BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request)
 	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
-	ec, err := handler.Balance.GetBalance(ctx, tokenString["login"].(string))
+	ec, err := handler.Balance.Status(ctx, tokenString["login"].(string))
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
 	// 200 - при ошибке nil, 500 - при иных ошибках сервиса
@@ -266,7 +266,7 @@ func (handler BalanceHandler) NewWithdrawal(w http.ResponseWriter, r *http.Reque
 }
 
 // получение информации о выводе средств с накопительного счёта пользователем
-func (handler BalanceHandler) GetWithdrawalsList(w http.ResponseWriter, r *http.Request) {
+func (handler BalanceHandler) WithdrawalsList(w http.ResponseWriter, r *http.Request) {
 	// наследуем контекcт запроса r *http.Request, оснащая его Timeout
 	ctx, cancel := context.WithTimeout(r.Context(), settings.StorageTimeout)
 	// освобождаем ресурс
@@ -274,7 +274,7 @@ func (handler BalanceHandler) GetWithdrawalsList(w http.ResponseWriter, r *http.
 	// получаем значение login из контекста запроса
 	_, tokenString, _ := jwtauth.FromContext(r.Context())
 	// получаем слайс структур и ошибку
-	ec, err := handler.Balance.GetWithdrawalsList(ctx, tokenString["login"].(string))
+	ec, err := handler.Balance.WithdrawalsList(ctx, tokenString["login"].(string))
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
 	// 200 - при ошибке nil, кодирование, 500 - при иных ошибках сервиса, 204 - если получена ошибка "no records"

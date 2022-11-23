@@ -9,7 +9,7 @@ import (
 )
 
 // маршрутизатор запросов
-func NewRouter(uHandler *handlers.UserHandler, oHandler *handlers.OrderHandler, bHandler *handlers.BalanceHandler) chi.Router {
+func NewRouter(userHandler *handlers.UserHandler, orderHandler *handlers.OrderHandler, balanceHandler *handlers.BalanceHandler) chi.Router {
 	// chi роутер
 	rout := chi.NewRouter()
 
@@ -26,28 +26,28 @@ func NewRouter(uHandler *handlers.UserHandler, oHandler *handlers.OrderHandler, 
 		// Handle valid / invalid tokens
 		r.Use(jwtauth.Authenticator)
 		// загрузка пользователем номера заказа для расчёта
-		r.Post("/api/user/orders", oHandler.Load)
+		r.Post("/api/user/orders", orderHandler.Load)
 		// получение списка загруженных пользователем номеров заказов, статусов их обработки и информации о начислениях
-		r.Get("/api/user/orders", oHandler.GetList)
+		r.Get("/api/user/orders", orderHandler.List)
 		// получение текущего баланса счёта баллов лояльности пользователя
-		r.Get("/api/user/balance", bHandler.GetBalance)
+		r.Get("/api/user/balance", balanceHandler.Status)
 		// запрос на списание баллов с накопительного счёта в счёт оплаты нового заказа
-		r.Post("/api/user/balance/withdraw", bHandler.NewWithdrawal)
+		r.Post("/api/user/balance/withdraw", balanceHandler.NewWithdrawal)
 		// получение информации о выводе средств с накопительного счёта пользователем
-		r.Get("/api/user/withdrawals", bHandler.GetWithdrawalsList)
+		r.Get("/api/user/withdrawals", balanceHandler.WithdrawalsList)
 
 	})
 
 	// Public routes
 	rout.Group(func(r chi.Router) {
 		// регистрация пользователя: HTTPзаголовок Authorization
-		r.Post("/api/user/register", uHandler.CreateNew)
+		r.Post("/api/user/register", userHandler.Create)
 		// аутентификация пользователя: HTTPзаголовок Authorization
-		r.Post("/api/user/login", uHandler.CheckAuthorization)
+		r.Post("/api/user/login", userHandler.CheckAuthorization)
 	})
 
 	// возврат ошибки 400 для всех остальных запросов
-	rout.HandleFunc("/*", uHandler.IncorrectRequests)
+	rout.HandleFunc("/*", userHandler.IncorrectRequests)
 
 	return rout
 }

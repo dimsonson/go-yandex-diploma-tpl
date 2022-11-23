@@ -21,12 +21,12 @@ import (
 
 // интерфейс закрытия соединения с хранилищем
 type ConnectionCloser interface {
-	Close()
+	ConnectionClose()
 }
 
 // интерфейс методов хранилища для User
 type User interface {
-	CreateNew(ctx context.Context, login string, passwH string) (err error)
+	Create(ctx context.Context, login string, passwH string) (err error)
 	CheckAuthorization(ctx context.Context, login string, passwHex string) (err error)
 }
 
@@ -34,14 +34,14 @@ type User interface {
 type Order interface {
 	Load(ctx context.Context, login string, orderNum string) (err error)
 	Update(ctx context.Context, login string, dc models.OrderSatus) (err error)
-	GetList(ctx context.Context, login string) (ec []models.OrdersList, err error)
+	List(ctx context.Context, login string) (ec []models.OrdersList, err error)
 }
 
 // интерфейс методов хранилища для Balance
 type Balance interface {
 	NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
-	GetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
-	GetBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
+	WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
+	Status(ctx context.Context, login string) (ec models.LoginBalance, err error)
 }
 
 // структура конструктора бизнес логики User
@@ -82,7 +82,7 @@ func NewBalanceService(bStorage Balance) *BalanceService {
 	}
 }
 
-func (storage *UserService) CreateNew(ctx context.Context, dc models.DecodeLoginPair) (err error) {
+func (storage *UserService) Create(ctx context.Context, dc models.DecodeLoginPair) (err error) {
 	// сощдание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
 	if err != nil {
@@ -90,7 +90,7 @@ func (storage *UserService) CreateNew(ctx context.Context, dc models.DecodeLogin
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = storage.User.CreateNew(ctx, dc.Login, passwHex)
+	err = storage.User.Create(ctx, dc.Login, passwHex)
 	return err
 }
 
@@ -190,15 +190,15 @@ func (storage *OrderService) Load(ctx context.Context, login string, orderNum st
 }
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
-func (storage *OrderService) GetList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
-	ec, err = storage.Order.GetList(ctx, login)
+func (storage *OrderService) List(ctx context.Context, login string) (ec []models.OrdersList, err error) {
+	ec, err = storage.Order.List(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
-func (storage *BalanceService) GetBalance(ctx context.Context, login string) (ec models.LoginBalance, err error) {
-	ec, err = storage.Balance.GetBalance(ctx, login)
+func (storage *BalanceService) Status(ctx context.Context, login string) (ec models.LoginBalance, err error) {
+	ec, err = storage.Balance.Status(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
@@ -211,8 +211,8 @@ func (storage *BalanceService) NewWithdrawal(ctx context.Context, login string, 
 }
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
-func (storage *BalanceService) GetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
-	ec, err = storage.Balance.GetWithdrawalsList(ctx, login)
+func (storage *BalanceService) WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
+	ec, err = storage.Balance.WithdrawalsList(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
