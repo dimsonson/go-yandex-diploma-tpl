@@ -59,7 +59,7 @@ func main() {
 	// канал остановки http сервера
 	idleConnsClosed := make(chan struct{})
 	// запуск сервера ожидающего остановку
-	httpServerStart(srv, idleConnsClosed)
+	go httpServerStart(srv, idleConnsClosed)
 	log.Print("ready to serve requests on " + addr)
 	// получение сигнала остановки
 	<-idleConnsClosed
@@ -115,15 +115,13 @@ func httpServerStart(srv *http.Server, idleConnsClosed chan struct{}) {
 		<-sigint
 		// we received an interrupt signal, shut down.
 		if err := srv.Shutdown(context.Background()); err != nil {
-			// Error from closing listeners, or context timeout:
+			// error from closing listeners, or context timeout:
 			log.Printf("HTTP server Shutdown error: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
-	go func() {
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			// Error starting or closing listener:
-			log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
-		}
-	}()
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		// Error starting or closing listener:
+		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
+	}
 }
