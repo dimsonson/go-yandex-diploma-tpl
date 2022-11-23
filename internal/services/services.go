@@ -19,37 +19,70 @@ import (
 
 //go:generate mockgen -source=services.go -destination=mocks/mock.go
 
-// интерфейс методов хранилища
-type StorageProvider interface {
-	StorageConnectionClose()
-
-	StorageCreateNewUser(ctx context.Context, login string, passwH string) (err error)
-	StorageAuthorizationCheck(ctx context.Context, login string, passwHex string) (err error)
-	
-	StorageGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
-	StorageGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error)
-	StorageGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
-	
-	StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error)
-	StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error)
-	StorageNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
+// интерфейс закрытия соединения с хранилищем
+type ConnectionCloser interface {
+	Close()
 }
 
-// структура конструктора бизнес логики
-type Services struct {
-	Storage StorageProvider
+// интерфейс методов хранилища для User
+type User interface {
+	CreateNew(ctx context.Context, login string, passwH string) (err error)
+	CheckAuthorization(ctx context.Context, login string, passwHex string) (err error)
+}
+
+// интерфейс методов хранилища для Order
+type Order interface {
+	Load(ctx context.Context, login string, orderNum string) (err error)
+	Update(ctx context.Context, login string, dc models.OrderSatus) (err error)
+	GetList(ctx context.Context, login string) (ec []models.OrdersList, err error)
+}
+
+// интерфейс методов хранилища для Balance
+type Balance interface {
+	NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
+	GetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
+	GetBalance(ctx context.Context, login string) (ec models.LoginBalance, err error)
+}
+
+// структура конструктора бизнес логики User
+type UserService struct {
+	User    User
+}
+
+// структура конструктора бизнес логики Order
+type OrderService struct {
+	Order   Order
 	CalcSys string
 }
 
-// конструктор бизнес логики
-func NewService(s StorageProvider, calcSys string) *Services {
-	return &Services{
-		s,
+// структура конструктора бизнес логики Balance
+type BalanceService struct {
+	Balance Balance
+}
+
+// конструктор бизнес логики User
+func NewUserService(uStorage User) *UserService {
+	return &UserService{
+		uStorage,
+	}
+}
+
+// конструктор бизнес логики Order
+func NewOrderService(oStorage Order, calcSys string) *OrderService {
+	return &OrderService{
+		oStorage,
 		calcSys,
 	}
 }
 
-func (sr *Services) ServiceCreateNewUser(ctx context.Context, dc models.DecodeLoginPair) (err error) {
+// конструктор бизнес логики Balance
+func NewBalanceService(bStorage Balance) *BalanceService {
+	return &BalanceService{
+		bStorage,
+	}
+}
+
+func (storage *UserService) CreateNew(ctx context.Context, dc models.DecodeLoginPair) (err error) {
 	// сощдание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
 	if err != nil {
@@ -57,11 +90,11 @@ func (sr *Services) ServiceCreateNewUser(ctx context.Context, dc models.DecodeLo
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = sr.Storage.StorageCreateNewUser(ctx, dc.Login, passwHex)
+	err = storage.User.CreateNew(ctx, dc.Login, passwHex)
 	return err
 }
 
-func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.DecodeLoginPair) (err error) {
+func (storage *UserService) CheckAuthorization(ctx context.Context, dc models.DecodeLoginPair) (err error) {
 	// создание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
 	if err != nil {
@@ -69,26 +102,26 @@ func (sr *Services) ServiceAuthorizationCheck(ctx context.Context, dc models.Dec
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = sr.Storage.StorageAuthorizationCheck(ctx, dc.Login, passwHex)
+	err = storage.User.CheckAuthorization(ctx, dc.Login, passwHex)
 	return err
 }
 
 // сервис загрузки пользователем номера заказа для расчёта
-func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
+func (storage *OrderService) Load(ctx context.Context, login string, orderNum string) (err error) {
 	// проверка up and running внешнего сервиса
-	rsp, err := http.Get(sr.CalcSys)
+	rsp, err := http.Get(storage.CalcSys)
 	if err != nil {
 		log.Printf("remoute service error: %s", err)
 		return
 	}
 	defer rsp.Body.Close()
 	// запись нового заказа в хранилище
-	err = sr.Storage.StorageNewOrderLoad(ctx, login, orderNum)
+	err = storage.Order.Load(ctx, login, orderNum)
 	if err != nil {
 		return err
 	}
 	// создание ссылки для запроса в систему начисления баллов
-	insertLink := sr.CalcSys + "/api/orders"
+	insertLink := storage.CalcSys + "/api/orders"
 	// создание JSON для запроса в систему начисления баллов
 	bodyJSON := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
 	// запрос регистрации заказа в системе расчета баллов
@@ -110,7 +143,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 			// пауза
 			time.Sleep(settings.RequestsTimeout)
 			// создаем ссылку для обноления статуса начислений по заказу
-			linkUpd := fmt.Sprintf("%s/api/orders/%s", sr.CalcSys, orderNum)
+			linkUpd := fmt.Sprintf("%s/api/orders/%s", storage.CalcSys, orderNum)
 			// отпарвляем запрос на получения обновленных данных по заказу
 			rGet, err := http.Get(linkUpd)
 			if err != nil {
@@ -127,7 +160,7 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 					return
 				}
 
-				err = sr.Storage.StorageNewOrderUpdate(ctx, login, dc)
+				err = storage.Order.Update(ctx, login, dc)
 				if err != nil {
 					log.Printf("sr.storage.StorageNewOrderUpdate error :%s", err)
 					return
@@ -157,29 +190,29 @@ func (sr *Services) ServiceNewOrderLoad(ctx context.Context, login string, order
 }
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
-func (sr *Services) ServiceGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
-	ec, err = sr.Storage.StorageGetOrdersList(ctx, login)
+func (storage *OrderService) GetList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
+	ec, err = storage.Order.GetList(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
-func (sr *Services) ServiceGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error) {
-	ec, err = sr.Storage.StorageGetUserBalance(ctx, login)
+func (storage *BalanceService) GetBalance(ctx context.Context, login string) (ec models.LoginBalance, err error) {
+	ec, err = storage.Balance.GetBalance(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
-func (sr *Services) ServiceNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
-	err = sr.Storage.StorageNewWithdrawal(ctx, login, dc)
+func (storage *BalanceService) NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
+	err = storage.Balance.NewWithdrawal(ctx, login, dc)
 	// возвращаем ошибку
 	return err
 }
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
-func (sr *Services) ServiceGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
-	ec, err = sr.Storage.StorageGetWithdrawalsList(ctx, login)
+func (storage *BalanceService) GetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
+	ec, err = storage.Balance.GetWithdrawalsList(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }

@@ -79,12 +79,12 @@ func NewSQLStorage(p string) *StorageSQL {
 }
 
 // метод закрытия совединения с SQL базой
-func (ms *StorageSQL) StorageConnectionClose() {
+func (ms *StorageSQL) Close() {
 	ms.PostgreSQL.Close()
 }
 
 // добавление нового пользователя в хранилище, запись в две таблицы в транзакции
-func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, passwHex string) (err error) {
+func (ms *StorageSQL) CreateNew(ctx context.Context, login string, passwHex string) (err error) {
 	// объявляем транзакцию
 	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
 	if err != nil {
@@ -148,7 +148,7 @@ func (ms *StorageSQL) StorageCreateNewUser(ctx context.Context, login string, pa
 }
 
 // проверка наличия нового пользователя в хранилище - авторизация
-func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login string, passwHex string) (err error) {
+func (ms *StorageSQL) CheckAuthorization(ctx context.Context, login string, passwHex string) (err error) {
 	var passwDB string
 	// создаем текст запроса
 	q := `SELECT password FROM users WHERE login = $1`
@@ -166,7 +166,7 @@ func (ms *StorageSQL) StorageAuthorizationCheck(ctx context.Context, login strin
 }
 
 // сервис загрузки номера заказа для расчёта без обноления статуса
-func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, orderNum string) (err error) {
+func (ms *StorageSQL) Load(ctx context.Context, login string, orderNum string) (err error) {
 	// создаем текст запроса, часть значений дефолтные в DB Postgre (см конструктор базы)
 	q := `INSERT INTO orders (order_num, login) VALUES ($1, $2)`
 	// записываем в хранилице orderNum, login
@@ -202,7 +202,7 @@ func (ms *StorageSQL) StorageNewOrderLoad(ctx context.Context, login string, ord
 }
 
 // сервис обновление статуса и начислений заказа для расчёта
-func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, dc models.OrderSatus) (err error) {
+func (ms *StorageSQL) Update(ctx context.Context, login string, dc models.OrderSatus) (err error) {
 	// объявляем транзакцию
 	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
 	if err != nil {
@@ -267,7 +267,7 @@ func (ms *StorageSQL) StorageNewOrderUpdate(ctx context.Context, login string, d
 }
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
-func (ms *StorageSQL) StorageGetOrdersList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
+func (ms *StorageSQL) GetList(ctx context.Context, login string) (ec []models.OrdersList, err error) {
 	// создаем текст запроса
 	q := `SELECT order_num, status, accrual, change_time FROM orders WHERE login = $1 ORDER BY change_time`
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременные
@@ -302,7 +302,7 @@ func (ms *StorageSQL) StorageGetOrdersList(ctx context.Context, login string) (e
 }
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
-func (ms *StorageSQL) StorageGetUserBalance(ctx context.Context, login string) (ec models.LoginBalance, err error) {
+func (ms *StorageSQL) GetBalance(ctx context.Context, login string) (ec models.LoginBalance, err error) {
 	// создаем текст запроса
 	q := `SELECT current_balance, total_withdrawn FROM balance WHERE login = $1`
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременную
@@ -314,7 +314,7 @@ func (ms *StorageSQL) StorageGetUserBalance(ctx context.Context, login string) (
 }
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
-func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
+func (ms *StorageSQL) NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
 	// объявляем транзакцию
 	tx, err := ms.PostgreSQL.BeginTx(ctx, nil)
 	if err != nil {
@@ -407,7 +407,7 @@ func (ms *StorageSQL) StorageNewWithdrawal(ctx context.Context, login string, dc
 
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
-func (ms *StorageSQL) StorageGetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
+func (ms *StorageSQL) GetWithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
 	// создаем текст запроса
 	q := `SELECT new_order, "sum", withdrawal_time FROM withdrawals WHERE login = $1 ORDER BY withdrawal_time`
 	// делаем запрос в SQL, получаем строку и пишем результат запроса в пременные

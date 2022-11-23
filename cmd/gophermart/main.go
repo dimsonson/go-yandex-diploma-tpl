@@ -27,7 +27,7 @@ func init() {
 // переменные по умолчанию
 const (
 	defServAddr   = "localhost:8000"
-	defDBlink     = "postgres://postgres:1818@localhost:5432/gophm" 
+	defDBlink     = "postgres://postgres:1818@localhost:5432/gophm"
 	defCalcSysURL = "http://localhost:8080"
 )
 
@@ -35,11 +35,20 @@ func main() {
 	// получаем переменные
 	dlink, calcSys, addr := flagsVars()
 	// инициализируем конструкторы
-	s := newStrorageProvider(dlink)
-	defer s.StorageConnectionClose()
-	srvs := services.NewService(s, calcSys)
-	h := handlers.NewHandler(srvs)
-	r := httprouter.NewRouter(h)
+	// конструкторы хранилища
+	storage := newStrorageProvider(dlink)
+	defer storage.Close()
+	// конструкторы User
+	serviceUser := services.NewUserService(storage)
+	handlerUser := handlers.NewUserHandler(serviceUser)
+	//конструкторы Order
+	serviceOrder := services.NewOrderService(storage, calcSys)
+	handlerOrder := handlers.NewOrderHandler(serviceOrder)
+	// конструкторы Balance
+	serviceBalance := services.NewBalanceService(storage)
+	handlerBalance := handlers.NewBalanceHandler(serviceBalance)
+
+	r := httprouter.NewRouter(handlerUser, handlerOrder, handlerBalance)
 	// запускаем сервер
 	log.Print("accruals calculation service URL:", settings.ColorGreen, calcSys, settings.ColorReset)
 	log.Print("starting http server on:", settings.ColorBlue, addr, settings.ColorReset)
@@ -77,7 +86,7 @@ func flagsVars() (dlink string, calcSys string, addr string) {
 }
 
 // создание интерфейса хранилища
-func newStrorageProvider(dlink string) (s services.StorageProvider) {
+func newStrorageProvider(dlink string) (s *storage.StorageSQL) {
 	// проверяем если переменная SQL url не пустая, логгируем
 	if dlink == "" {
 		log.Print("server may not properly start with "+settings.ColorRed+"database DSN empty", settings.ColorReset)
