@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
@@ -50,26 +49,21 @@ func main() {
 	// конструкторы Balance
 	serviceBalance := services.NewBalanceService(storage)
 	handlerBalance := handlers.NewBalanceHandler(serviceBalance)
-	
+	// конструктор роутера
 	r := httprouter.NewRouter(handlerUser, handlerOrder, handlerBalance)
 	// запускаем сервер
 	log.Print("accruals calculation service URL: ", settings.ColorGreen, calcSys, settings.ColorReset)
 	log.Print("starting http server on: ", settings.ColorBlue, addr, settings.ColorReset)
-	//log.Fatal().Err(http.ListenAndServe(addr, r))
-	//httpServerStart(addr, r)
-	// gracefully exit on keyboard interrupt
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		if err := http.ListenAndServe(addr, r); err != http.ErrServerClosed {
-			// Error starting or closing listener:
-			log.Fatal().Err(err).Msgf("HTTP server ListenAndServe: %v", err)
-		}
-	}()
+	// конфигурирование http сервера
+	srv := &http.Server{Addr: addr, Handler: r}
+	// канал остановки http сервера
+	idleConnsClosed := make(chan struct{})
+	// запуск сервера ожидающего остановку
+	httpServerStart(srv, idleConnsClosed)
 	log.Print("ready to serve requests on " + addr)
-	<-c
+	// получение сигнала остановки
+	<-idleConnsClosed
 	log.Print("gracefully shutting down")
-	os.Exit(0)
 }
 
 // парсинг флагов и валидация переменных окружения
@@ -113,23 +107,23 @@ func newStrorageProvider(dlink string) (s *storage.StorageSQL) {
 	return s
 }
 
-func httpServerStart(addr string, r http.Handler) {
-	var srv http.Server
-	idleConnsClosed := make(chan struct{})
+// запуск и gracefull завершение ListenAndServe
+func httpServerStart(srv *http.Server, idleConnsClosed chan struct{}) {
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
-		// We received an interrupt signal, shut down.
+		// we received an interrupt signal, shut down.
 		if err := srv.Shutdown(context.Background()); err != nil {
 			// Error from closing listeners, or context timeout:
-			log.Printf("HTTP server Shutdown: %v", err)
+			log.Printf("HTTP server Shutdown error: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
-	if err := http.ListenAndServe(addr, r); err != http.ErrServerClosed {
-		// Error starting or closing listener:
-		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe: %v", err)
-	}
-	<-idleConnsClosed
+	go func() {
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			// Error starting or closing listener:
+			log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
+		}
+	}()
 }
