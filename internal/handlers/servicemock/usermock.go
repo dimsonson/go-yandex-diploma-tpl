@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 )
@@ -12,8 +13,14 @@ type User struct {
 }
 
 func (msrv *User) Create(ctx context.Context, dc models.DecodeLoginPair) (err error) {
-	return err
-
+	switch {
+	case dc.Login == "dimma" && dc.Password == "12345":
+		return nil
+	case dc.Login == "dimma2login":
+		return errors.New("login existc")
+	default:
+		return errors.New("something wrong woth server")
+	}
 }
 
 func (msrv *User) CheckAuthorization(ctx context.Context, dc models.DecodeLoginPair) (err error) {

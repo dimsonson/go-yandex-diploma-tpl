@@ -15,6 +15,6 @@ func (mst *Balance) Status(ctx context.Context, login string) (ec models.LoginBa
 func (mst *Balance) NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
 	return nil
 }
-func (mst *Balance) 	WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
+func (mst *Balance) WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
 	return ec, nil
 }
