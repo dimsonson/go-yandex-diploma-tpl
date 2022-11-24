@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	//"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
-	//"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers/mocks"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers/servicemock"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
@@ -40,15 +40,15 @@ func TestHandler_HandlerNewUserReg(t *testing.T) {
 			expectedContentType:  "text/plain; charset=utf-8",
 		},
 	}
-	//s := &mocks.Services{}
-	//h := handlers.NewUserHandler(s)
+	s := &servicemock.User{}
+	h := handlers. NewUserHandler(s)
 
 	for _, tCase := range tests {
 		// запускаем каждый тест
 		t.Run(tCase.name, func(t *testing.T) {
 			// Test Server
 			rout := chi.NewRouter()
-			//rout.Post("/api/user/register", h.HandlerNewUserReg)
+			rout.Post("/api/user/register", h.Create)
 			//запрос
 			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
 			// create Test Request
