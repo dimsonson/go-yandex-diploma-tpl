@@ -31,7 +31,10 @@ type gzipReader struct {
 // метод для закрытия тела запроса
 func (r gzipReader) Close() error {
 	//закрываем gzipReader
-	r.gzipReader.Close()
+	err := r.gzipReader.Close()
+	if err != nil {
+		return err
+	}
 	//закрываем тело
 	return r.gzipBody.Close()
 }

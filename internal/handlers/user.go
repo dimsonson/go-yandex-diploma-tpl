@@ -60,7 +60,12 @@ func (handler UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
-		_, tokenString, _ := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
+		_, tokenString, err := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
+		if err != nil {
+			log.Printf("tokenAuth.Encode error HandlerCreate: %s", err)
+			http.Error(w, "login handling error", http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Authorization", "Bearer "+tokenString)
 		w.WriteHeader(http.StatusOK)
 	}
@@ -76,7 +81,7 @@ func (handler UserHandler) CheckAuthorization(w http.ResponseWriter, r *http.Req
 	dc := models.DecodeLoginPair{}
 	err := json.NewDecoder(r.Body).Decode(&dc)
 	if err != nil {
-		log.Printf("unmarshal error HandlerUserAuth: %s", err)
+		log.Printf("unmarshal error HandlerCheckAuthorization: %s", err)
 		http.Error(w, "invalid JSON structure received", http.StatusBadRequest)
 		return
 	}
@@ -89,7 +94,12 @@ func (handler UserHandler) CheckAuthorization(w http.ResponseWriter, r *http.Req
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
-		_, tokenString, _ := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
+		_, tokenString, err := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
+		if err != nil {
+			log.Printf("tokenAuth.Encode error HandlerCheckAuthorization: %s", err)
+			http.Error(w, "login handling error", http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Authorization", "Bearer "+tokenString)
 		w.WriteHeader(http.StatusOK)
 	}

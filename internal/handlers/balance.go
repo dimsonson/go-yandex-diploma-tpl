@@ -41,11 +41,16 @@ func (handler BalanceHandler) Status(w http.ResponseWriter, r *http.Request) {
 	// освобождаем ресурс
 	defer cancel()
 	// получаем значение login из контекста запроса
-	_, tokenString, _ := jwtauth.FromContext(r.Context())
-	// получаем слайс структур и ошибку
-	ec, err := handler.Balance.Status(ctx, tokenString["login"].(string))
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		log.Printf("FromContext error HandlerStatus: %s", err)
+		http.Error(w, "balance handling error", http.StatusInternalServerError)
+		return
+	}
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
+	// получаем слайс структур и ошибку
+	ec, err := handler.Balance.Status(ctx, claims["login"].(string))
 	// 200 - при ошибке nil, 500 - при иных ошибках сервиса
 	switch {
 	case err != nil:
@@ -79,9 +84,14 @@ func (handler BalanceHandler) NewWithdrawal(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	// получаем значение login из контекста запроса
-	_, tokenString, _ := jwtauth.FromContext(r.Context())
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		log.Printf("FromContext error HandlerNewWithdrawal: %s", err)
+		http.Error(w, "balance handling error", http.StatusInternalServerError)
+		return
+	}
 	// отпправляем на списание
-	err = handler.Balance.NewWithdrawal(ctx, tokenString["login"].(string), dc)
+	err = handler.Balance.NewWithdrawal(ctx, claims["login"].(string), dc)
 	// 200 - при ошибке nil, 500 - при иных ошибках сервиса, 422 - проверка Луна не ок
 	// 402 - если получена ошибка "insufficient funds"
 	switch {
@@ -103,11 +113,16 @@ func (handler BalanceHandler) WithdrawalsList(w http.ResponseWriter, r *http.Req
 	// освобождаем ресурс
 	defer cancel()
 	// получаем значение login из контекста запроса
-	_, tokenString, _ := jwtauth.FromContext(r.Context())
-	// получаем слайс структур и ошибку
-	ec, err := handler.Balance.WithdrawalsList(ctx, tokenString["login"].(string))
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		log.Printf("FromContext error HandlerWithdrawalsList: %s", err)
+		http.Error(w, "balance handling error", http.StatusInternalServerError)
+		return
+	}
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
+	// получаем слайс структур и ошибку
+	ec, err := handler.Balance.WithdrawalsList(ctx, claims["login"].(string))
 	// 200 - при ошибке nil, кодирование, 500 - при иных ошибках сервиса, 204 - если получена ошибка "no records"
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no records"):

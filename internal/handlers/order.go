@@ -57,9 +57,14 @@ func (handler OrderHandler) Load(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// получаем значение login из контекста запроса
-	_, tokenString, _ := jwtauth.FromContext(r.Context())
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		log.Printf("FromContext error LoadHandler: %s", err)
+		http.Error(w, "order handling error", http.StatusInternalServerError)
+		return
+	}
 	// проверяем пару логин:пароль в хранилище
-	err = handler.Order.Load(ctx, tokenString["login"].(string), b)
+	err = handler.Order.Load(ctx, claims["login"].(string), b)
 	// если ордер существует от этого пользователя - статус 200, если иная ошибка - 500
 	// если от другого пользователя - 409
 	// если нет ошибок - 202
@@ -83,11 +88,16 @@ func (handler OrderHandler) List(w http.ResponseWriter, r *http.Request) {
 	// освобождаем ресурс
 	defer cancel()
 	// получаем значение login из контекста запроса
-	_, tokenString, _ := jwtauth.FromContext(r.Context())
-	// получаем слайс структур и ошибку
-	ec, err := handler.Order.List(ctx, tokenString["login"].(string))
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		log.Printf("FromContext error ListHandler: %s", err)
+		http.Error(w, "order handling error", http.StatusInternalServerError)
+		return
+	}
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
+	// получаем слайс структур и ошибку
+	ec, err := handler.Order.List(ctx, claims["login"].(string))
 	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no orders for this login"):
@@ -95,7 +105,7 @@ func (handler OrderHandler) List(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
-		//устанавливаем статус-код 200
+		// устанавливаем статус-код 200
 		w.WriteHeader(http.StatusOK)
 		// сериализуем и пишем тело ответа
 		json.NewEncoder(w).Encode(ec)

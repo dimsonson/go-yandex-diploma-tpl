@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/go-chi/jwtauth/v5"
+	"github.com/lestrrat-go/jwx/v2/jwa"
 )
 
 // ключ подписи
@@ -22,8 +23,9 @@ const (
 	ColorReset  = "\u001b[0m"
 )
 
+
 // переменная ключа токена
-var TokenAuth *jwtauth.JWTAuth = jwtauth.New("HS256", []byte(SignKey), nil)
+var TokenAuth *jwtauth.JWTAuth = jwtauth.New(string(jwa.HS256), []byte(SignKey), nil)
 
 // начальный таймаут для горутины запросов к сервису расчета баллов
 var RequestsTimeout = 500 * time.Millisecond
