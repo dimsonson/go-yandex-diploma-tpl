@@ -26,15 +26,15 @@ func NewRouter(userHandler *handlers.UserHandler, orderHandler *handlers.OrderHa
 		// обрабочик валидный / не валидный токен
 		r.Use(jwtauth.Authenticator)
 		// загрузка пользователем номера заказа для расчёта
-		rout.Post("/api/user/orders", orderHandler.Load)
+		r.Post("/api/user/orders", orderHandler.Load)
 		// получение списка загруженных пользователем номеров заказов, статусов их обработки и информации о начислениях
-		rout.Get("/api/user/orders", orderHandler.List)
+		r.Get("/api/user/orders", orderHandler.List)
 		// получение текущего баланса счёта баллов лояльности пользователя
-		rout.Get("/api/user/balance", balanceHandler.Status)
+		r.Get("/api/user/balance", balanceHandler.Status)
 		// запрос на списание баллов с накопительного счёта в счёт оплаты нового заказа
-		rout.Post("/api/user/balance/withdraw", balanceHandler.NewWithdrawal)
+		r.Post("/api/user/balance/withdraw", balanceHandler.NewWithdrawal)
 		// получение информации о выводе средств с накопительного счёта пользователем
-		rout.Get("/api/user/withdrawals", balanceHandler.WithdrawalsList)
+		r.Get("/api/user/withdrawals", balanceHandler.WithdrawalsList)
 
 	})
 
