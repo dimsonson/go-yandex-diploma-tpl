@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/ShiraazMoollatjie/goluhn"
@@ -44,30 +45,43 @@ func (handler OrderHandler) Load(w http.ResponseWriter, r *http.Request) {
 	bs, err := io.ReadAll(r.Body)
 	// обрабатываем ошибку
 	if err != nil {
-		log.Printf("boby read HandlerNewOrderLoad error :%s", err)
+		log.Printf("body read HandlerLoad error :%s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	b := string(bs)
+	// проверяем, пришли ли цифры в номере заказа
+	_, err = strconv.Atoi(b)
+	if err != nil {
+		log.Printf("digits check HandlerLoad error :%s", err)
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
 	// проверяем на алгоритм Луна, если не ок, возвращаем 422
 	err = goluhn.Validate(b)
 	if err != nil {
-		log.Printf("luhn algo check error :%s", err)
+		log.Printf("luhn algo check HandlerLoad error :%s", err)
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 	// получаем значение login из контекста запроса
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil {
-		log.Printf("FromContext error LoadHandler: %s", err)
+		log.Printf("FromContext error HandlerLoad: %s", err)
+		http.Error(w, "order handling error", http.StatusInternalServerError)
+		return
+	}
+	// получаем значение из интерфейса
+	login, ok := claims["login"].(string)
+	if !ok {
+		log.Printf("interface assertion error HandlerLoad: %s", err)
 		http.Error(w, "order handling error", http.StatusInternalServerError)
 		return
 	}
 	// проверяем пару логин:пароль в хранилище
-	err = handler.service.Load(ctx, claims["login"].(string), b)
+	err = handler.service.Load(ctx, login, b)
 	// если ордер существует от этого пользователя - статус 200, если иная ошибка - 500
-	// если от другого пользователя - 409
-	// если нет ошибок - 202
+	// если от другого пользователя - 409 // если нет ошибок - 202
 	switch {
 	case err != nil && strings.Contains(err.Error(), "order number from this login already exist"):
 		w.WriteHeader(http.StatusOK)

@@ -19,26 +19,26 @@ func NewRouter(userHandler *handlers.UserHandler, orderHandler *handlers.OrderHa
 	// дополнительный middleware gzip
 	rout.Use(middlewareGzip)
 
-	// Protected routes
+	// защищенные пути
 	rout.Group(func(r chi.Router) {
-		// Seek, verify and validate JWT tokens
+		// поиск, верифицирование, валидация JWT токенов
 		r.Use(jwtauth.Verifier(settings.TokenAuth))
-		// Handle valid / invalid tokens
+		// обрабочик валидный / не валидный токен
 		r.Use(jwtauth.Authenticator)
 		// загрузка пользователем номера заказа для расчёта
-		r.Post("/api/user/orders", orderHandler.Load)
+		rout.Post("/api/user/orders", orderHandler.Load)
 		// получение списка загруженных пользователем номеров заказов, статусов их обработки и информации о начислениях
-		r.Get("/api/user/orders", orderHandler.List)
+		rout.Get("/api/user/orders", orderHandler.List)
 		// получение текущего баланса счёта баллов лояльности пользователя
-		r.Get("/api/user/balance", balanceHandler.Status)
+		rout.Get("/api/user/balance", balanceHandler.Status)
 		// запрос на списание баллов с накопительного счёта в счёт оплаты нового заказа
-		r.Post("/api/user/balance/withdraw", balanceHandler.NewWithdrawal)
+		rout.Post("/api/user/balance/withdraw", balanceHandler.NewWithdrawal)
 		// получение информации о выводе средств с накопительного счёта пользователем
-		r.Get("/api/user/withdrawals", balanceHandler.WithdrawalsList)
+		rout.Get("/api/user/withdrawals", balanceHandler.WithdrawalsList)
 
 	})
 
-	// Public routes
+	// публичные пути
 	rout.Group(func(r chi.Router) {
 		// регистрация пользователя: HTTPзаголовок Authorization
 		r.Post("/api/user/register", userHandler.Create)

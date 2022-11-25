@@ -9,10 +9,100 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers/servicemock"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHandler_Ceate(t *testing.T) {
+func TestHandler_Load(t *testing.T) {
+	// определяем структуру теста
+	// создаём массив тестов: имя и желаемый результат
+	tests := []struct {
+		name               string
+		inputMetod         string
+		inputEndpoint      string
+		inputBody          string
+		expectedStatusCode int
+		inputLogin         string
+	}{
+		// определяем все тесты
+		{
+			name:               "Positive test for order load",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma",
+			inputBody:          "1235489802",
+			expectedStatusCode: http.StatusAccepted,
+		},
+		{
+			name:               "Negative test order load - not every sign from order number is digit",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma",
+			inputBody:          "1235AAAA489802",
+			expectedStatusCode: http.StatusUnprocessableEntity,
+		},
+		{
+			name:               "Negative test order load - luhn algo check isn't ok",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma",
+			inputBody:          "123548980260",
+			expectedStatusCode: http.StatusUnprocessableEntity,
+		},
+		{
+			name:               "Negative test order load - order alredy exist for this login",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma2login",
+			inputBody:          "1235489802",
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:               "Negative test order load - order alredy exist for another login",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma3",
+			inputBody:          "1235489802",
+			expectedStatusCode: http.StatusConflict,
+		},
+		{
+			name:               "Negative test order load - any other internal error",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma8",
+			inputBody:          "1235489802",
+			expectedStatusCode: http.StatusInternalServerError,
+		},
+	}
+	s := &servicemock.Order{}
+	h := handlers.NewOrderHandler(s)
+
+	for _, tCase := range tests {
+		// запускаем каждый тест
+		t.Run(tCase.name, func(t *testing.T) {
+			// конфигурирование тестового сервера
+			rout := chi.NewRouter()
+			rout.Post("/api/user/orders", h.Load)
+			// конфигурирование запроса
+			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
+			// контекст логина
+			tkn := jwt.New()
+			tkn.Set(`login`, tCase.inputLogin)
+			rctx := jwtauth.NewContext(request.Context(), tkn, nil)
+			request = request.WithContext(rctx)
+			// создание запроса
+			w := httptest.NewRecorder()
+			w.Header().Set("Authorization", "Bearer "+tCase.inputLogin)
+			// запуск
+			rout.ServeHTTP(w, request)
+			// оценка результатов
+			assert.Equal(t, tCase.expectedStatusCode, w.Code)
+		})
+	}
+}
+
+func TestHandler_List(t *testing.T) {
 	// определяем структуру теста
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
@@ -21,73 +111,81 @@ func TestHandler_Ceate(t *testing.T) {
 		inputEndpoint        string
 		inputBody            string
 		expectedStatusCode   int
-		expectedResponseBody string
-		//expectedHeader1        string
-		expectedHeader2 string
-		//expectedHeaderContent1 string
-		expectedHeaderContent2 string
+		inputLogin           string
 	}{
 		// определяем все тесты
 		{
-			name:               "OK (positive) test for user registration",
-			inputMetod:         "POST",
-			inputEndpoint:      "/api/user/register",
-			inputBody:          `{ "login": "dimma", "password": "12345" }`,
+			name:               "Positive test for order load",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma",
+			inputBody:          "1235489802",
+			expectedStatusCode: http.StatusAccepted,
+		},
+		{
+			name:               "Negative test order load - not every sign from order number is digit",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma",
+			inputBody:          "1235AAAA489802",
+			expectedStatusCode: http.StatusUnprocessableEntity,
+		},
+		{
+			name:               "Negative test order load - luhn algo check isn't ok",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma",
+			inputBody:          "123548980260",
+			expectedStatusCode: http.StatusUnprocessableEntity,
+		},
+		{
+			name:               "Negative test order load - order alredy exist for this login",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma2login",
+			inputBody:          "1235489802",
 			expectedStatusCode: http.StatusOK,
-			// expectedHeader1:        "Content-Type",
-			// expectedHeaderContent1: "text/plain",
-			expectedHeader2:        "Authorization",
-			expectedHeaderContent2: "Bearer",
 		},
 		{
-			name:               "Negative test user registration - wrong JSON",
-			inputMetod:         "POST",
-			inputEndpoint:      "/api/user/register",
-			inputBody:          `{ "login": "dimma, "password": "12345" }`,
-			expectedStatusCode: http.StatusBadRequest,
-			//expectedHeader1:        "Content-Type",
-			//expectedHeaderContent1: "text/plain; charset=utf-8",
-		},
-		{
-			name:               "Negative test user registration - login exist",
-			inputMetod:         "POST",
-			inputEndpoint:      "/api/user/register",
-			inputBody:          `{ "login": "dimma2login", "password": "12345" }`,
+			name:               "Negative test order load - order alredy exist for another login",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma3",
+			inputBody:          "1235489802",
 			expectedStatusCode: http.StatusConflict,
-			//expectedHeader1:        "Content-Type",
-			//expectedHeaderContent1: "text/plain; charset=utf-8",
 		},
 		{
-			name:               "Negative test user registration - server error",
-			inputMetod:         "POST",
-			inputEndpoint:      "/api/user/register",
-			inputBody:          `{ "login": "dimmaServErr", "password": "12345" }`,
+			name:               "Negative test order load - any other internal error",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/orders",
+			inputLogin:         "dimma8",
+			inputBody:          "1235489802",
 			expectedStatusCode: http.StatusInternalServerError,
-			//expectedHeader1:        "Content-Type",
-			//expectedHeaderContent1: "text/plain; charset=utf-8",
 		},
 	}
-	s := &servicemock.User{}
-	h := handlers.NewUserHandler(s)
+	s := &servicemock.Order{}
+	h := handlers.NewOrderHandler(s)
 
 	for _, tCase := range tests {
 		// запускаем каждый тест
 		t.Run(tCase.name, func(t *testing.T) {
 			// конфигурирование тестового сервера
 			rout := chi.NewRouter()
-			rout.Post("/api/user/register", h.Create)
+			rout.Post("/api/user/orders", h.List)
 			// конфигурирование запроса
 			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
+			// контекст логина
+			tkn := jwt.New()
+			tkn.Set(`login`, tCase.inputLogin)
+			rctx := jwtauth.NewContext(request.Context(), tkn, nil)
+			request = request.WithContext(rctx)
 			// создание запроса
 			w := httptest.NewRecorder()
+			w.Header().Set("Authorization", "Bearer "+tCase.inputLogin)
 			// запуск
 			rout.ServeHTTP(w, request)
 			// оценка результатов
 			assert.Equal(t, tCase.expectedStatusCode, w.Code)
-			if w.Code == http.StatusOK {
-				assert.Contains(t, w.Header().Get(tCase.expectedHeader2), tCase.expectedHeaderContent2)
-			}
-
 		})
 	}
 }
