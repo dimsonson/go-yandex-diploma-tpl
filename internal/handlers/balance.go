@@ -47,10 +47,17 @@ func (handler BalanceHandler) Status(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "balance handling error", http.StatusInternalServerError)
 		return
 	}
+	// получаем значение из интерфейса
+	login, ok := claims["login"].(string)
+	if !ok {
+		log.Printf("interface assertion error HandlerStatus: %s", err)
+		http.Error(w, "order handling error", http.StatusInternalServerError)
+		return
+	}
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
 	// получаем слайс структур и ошибку
-	ec, err := handler.service.Status(ctx, claims["login"].(string))
+	ec, err := handler.service.Status(ctx, login)
 	// 200 - при ошибке nil, 500 - при иных ошибках сервиса
 	switch {
 	case err != nil:
@@ -90,8 +97,15 @@ func (handler BalanceHandler) NewWithdrawal(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "balance handling error", http.StatusInternalServerError)
 		return
 	}
+	// получаем значение из интерфейса
+	login, ok := claims["login"].(string)
+	if !ok {
+		log.Printf("interface assertion error HandlerNewWithdrawal: %s", err)
+		http.Error(w, "order handling error", http.StatusInternalServerError)
+		return
+	}
 	// отпправляем на списание
-	err = handler.service.NewWithdrawal(ctx, claims["login"].(string), dc)
+	err = handler.service.NewWithdrawal(ctx, login, dc)
 	// 200 - при ошибке nil, 500 - при иных ошибках сервиса, 422 - проверка Луна не ок
 	// 402 - если получена ошибка "insufficient funds"
 	switch {
@@ -119,10 +133,17 @@ func (handler BalanceHandler) WithdrawalsList(w http.ResponseWriter, r *http.Req
 		http.Error(w, "balance handling error", http.StatusInternalServerError)
 		return
 	}
+	// получаем значение из интерфейса
+	login, ok := claims["login"].(string)
+	if !ok {
+		log.Printf("interface assertion error HandlerNewWithdrawal: %s", err)
+		http.Error(w, "order handling error", http.StatusInternalServerError)
+		return
+	}
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
 	// получаем слайс структур и ошибку
-	ec, err := handler.service.WithdrawalsList(ctx, claims["login"].(string))
+	ec, err := handler.service.WithdrawalsList(ctx, login)
 	// 200 - при ошибке nil, кодирование, 500 - при иных ошибках сервиса, 204 - если получена ошибка "no records"
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no records"):

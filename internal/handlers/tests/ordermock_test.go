@@ -115,24 +115,21 @@ func TestHandler_List(t *testing.T) {
 	}{
 		// определяем все тесты
 		{
-			name:               "Positive test for order load",
+			name:               "Positive test for order list report",
 			inputMetod:         http.MethodGet,
 			inputEndpoint:      "/api/user/orders",
 			inputLogin:         "dimma",
 			expectedStatusCode: http.StatusOK,
 		},
-		
-	
 		{
-			name:               "Negative test order load - order alredy exist for this login",
+			name:               "Negative test order list - no orders for report",
 			inputMetod:         http.MethodGet,
 			inputEndpoint:      "/api/user/orders",
 			inputLogin:         "dimma2login",
 			expectedStatusCode: http.StatusNoContent,
 		},
-	
 		{
-			name:               "Negative test order load - any other internal error",
+			name:               "Negative test order list - any other internal error",
 			inputMetod:         http.MethodGet,
 			inputEndpoint:      "/api/user/orders",
 			inputLogin:         "dimma8",
