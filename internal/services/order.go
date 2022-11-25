@@ -24,7 +24,7 @@ type Order interface {
 
 // структура конструктора бизнес логики Order
 type OrderService struct {
-	Order   Order
+	storage   Order
 	CalcSys string
 }
 
@@ -46,7 +46,7 @@ func (storage *OrderService) Load(ctx context.Context, login string, orderNum st
 	}
 	defer rsp.Body.Close()
 	// запись нового заказа в хранилище
-	err = storage.Order.Load(ctx, login, orderNum)
+	err = storage.storage.Load(ctx, login, orderNum)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (storage *OrderService) Load(ctx context.Context, login string, orderNum st
 					return
 				}
 
-				err = storage.Order.Update(ctx, login, dc)
+				err = storage.storage.Update(ctx, login, dc)
 				if err != nil {
 					log.Printf("sr.storage.StorageNewOrderUpdate error :%s", err)
 					return
@@ -121,7 +121,7 @@ func (storage *OrderService) Load(ctx context.Context, login string, orderNum st
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
 func (storage *OrderService) List(ctx context.Context, login string) (ec []models.OrdersList, err error) {
-	ec, err = storage.Order.List(ctx, login)
+	ec, err = storage.storage.List(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }

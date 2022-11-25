@@ -15,7 +15,7 @@ type Balance interface {
 
 // структура конструктора бизнес логики Balance
 type BalanceService struct {
-	Balance Balance
+	storage Balance
 }
 
 // конструктор бизнес логики Balance
@@ -27,21 +27,21 @@ func NewBalanceService(bStorage Balance) *BalanceService {
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
 func (storage *BalanceService) Status(ctx context.Context, login string) (ec models.LoginBalance, err error) {
-	ec, err = storage.Balance.Status(ctx, login)
+	ec, err = storage.storage.Status(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (storage *BalanceService) NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
-	err = storage.Balance.NewWithdrawal(ctx, login, dc)
+	err = storage.storage.NewWithdrawal(ctx, login, dc)
 	// возвращаем ошибку
 	return err
 }
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
 func (storage *BalanceService) WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
-	ec, err = storage.Balance.WithdrawalsList(ctx, login)
+	ec, err = storage.storage.WithdrawalsList(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }

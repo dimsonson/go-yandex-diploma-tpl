@@ -24,7 +24,7 @@ type Order interface {
 
 // структура для конструктура обработчика Order
 type OrderHandler struct {
-	Order Order
+	service Order
 }
 
 // конструктор обработчика Order
@@ -64,7 +64,7 @@ func (handler OrderHandler) Load(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// проверяем пару логин:пароль в хранилище
-	err = handler.Order.Load(ctx, claims["login"].(string), b)
+	err = handler.service.Load(ctx, claims["login"].(string), b)
 	// если ордер существует от этого пользователя - статус 200, если иная ошибка - 500
 	// если от другого пользователя - 409
 	// если нет ошибок - 202
@@ -97,7 +97,7 @@ func (handler OrderHandler) List(w http.ResponseWriter, r *http.Request) {
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
 	// получаем слайс структур и ошибку
-	ec, err := handler.Order.List(ctx, claims["login"].(string))
+	ec, err := handler.service.List(ctx, claims["login"].(string))
 	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no orders for this login"):

@@ -18,7 +18,7 @@ type User interface {
 
 // структура конструктора бизнес логики User
 type UserService struct {
-	User User
+	storage User
 }
 
 // конструктор бизнес логики User
@@ -36,7 +36,7 @@ func (storage *UserService) Create(ctx context.Context, dc models.DecodeLoginPai
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = storage.User.Create(ctx, dc.Login, passwHex)
+	err = storage.storage.Create(ctx, dc.Login, passwHex)
 	return err
 }
 
@@ -48,7 +48,7 @@ func (storage *UserService) CheckAuthorization(ctx context.Context, dc models.De
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = storage.User.CheckAuthorization(ctx, dc.Login, passwHex)
+	err = storage.storage.CheckAuthorization(ctx, dc.Login, passwHex)
 	return err
 }
 

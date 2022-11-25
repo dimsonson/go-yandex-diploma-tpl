@@ -21,7 +21,7 @@ type User interface {
 
 // структура для конструктура обработчика User
 type UserHandler struct {
-	User User
+	service User
 }
 
 // конструктор обработчика User
@@ -52,7 +52,7 @@ func (handler UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// пишем пару логин:пароль в хранилище
-	err = handler.User.Create(ctx, dc)
+	err = handler.service.Create(ctx, dc)
 	// если логин существует возвращаем статус 409, если иная ошибка - 500, если без ошибок -200
 	switch {
 	case err != nil && strings.Contains(err.Error(), "login exist"):
@@ -86,7 +86,7 @@ func (handler UserHandler) CheckAuthorization(w http.ResponseWriter, r *http.Req
 		return
 	}
 	// проверяем пару логин:пароль в хранилище
-	err = handler.User.CheckAuthorization(ctx, dc)
+	err = handler.service.CheckAuthorization(ctx, dc)
 	// если логин существует и пароль ок возвращаем статус 200, если иная ошибка - 500, если пара неверна - 401
 	switch {
 	case err != nil && strings.Contains(err.Error(), "login or password not exist"):
