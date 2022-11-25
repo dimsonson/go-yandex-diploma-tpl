@@ -104,14 +104,21 @@ func (handler OrderHandler) List(w http.ResponseWriter, r *http.Request) {
 	// получаем значение login из контекста запроса
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil {
-		log.Printf("FromContext error ListHandler: %s", err)
+		log.Printf("FromContext error HandlerList: %s", err)
+		http.Error(w, "order handling error", http.StatusInternalServerError)
+		return
+	}
+	// получаем значение из интерфейса
+	login, ok := claims["login"].(string)
+	if !ok {
+		log.Printf("interface assertion error HandlerList: %s", err)
 		http.Error(w, "order handling error", http.StatusInternalServerError)
 		return
 	}
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
 	// получаем слайс структур и ошибку
-	ec, err := handler.service.List(ctx, claims["login"].(string))
+	ec, err := handler.service.List(ctx, login)
 	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
 	switch {
 	case err != nil && strings.Contains(err.Error(), "no orders for this login"):

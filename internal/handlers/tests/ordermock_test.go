@@ -106,60 +106,36 @@ func TestHandler_List(t *testing.T) {
 	// определяем структуру теста
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
-		name                 string
-		inputMetod           string
-		inputEndpoint        string
-		inputBody            string
-		expectedStatusCode   int
-		inputLogin           string
+		name          string
+		inputMetod    string
+		inputEndpoint string
+
+		expectedStatusCode int
+		inputLogin         string
 	}{
 		// определяем все тесты
 		{
 			name:               "Positive test for order load",
-			inputMetod:         http.MethodPost,
+			inputMetod:         http.MethodGet,
 			inputEndpoint:      "/api/user/orders",
 			inputLogin:         "dimma",
-			inputBody:          "1235489802",
-			expectedStatusCode: http.StatusAccepted,
-		},
-		{
-			name:               "Negative test order load - not every sign from order number is digit",
-			inputMetod:         http.MethodPost,
-			inputEndpoint:      "/api/user/orders",
-			inputLogin:         "dimma",
-			inputBody:          "1235AAAA489802",
-			expectedStatusCode: http.StatusUnprocessableEntity,
-		},
-		{
-			name:               "Negative test order load - luhn algo check isn't ok",
-			inputMetod:         http.MethodPost,
-			inputEndpoint:      "/api/user/orders",
-			inputLogin:         "dimma",
-			inputBody:          "123548980260",
-			expectedStatusCode: http.StatusUnprocessableEntity,
-		},
-		{
-			name:               "Negative test order load - order alredy exist for this login",
-			inputMetod:         http.MethodPost,
-			inputEndpoint:      "/api/user/orders",
-			inputLogin:         "dimma2login",
-			inputBody:          "1235489802",
 			expectedStatusCode: http.StatusOK,
 		},
+		
+	
 		{
-			name:               "Negative test order load - order alredy exist for another login",
-			inputMetod:         http.MethodPost,
+			name:               "Negative test order load - order alredy exist for this login",
+			inputMetod:         http.MethodGet,
 			inputEndpoint:      "/api/user/orders",
-			inputLogin:         "dimma3",
-			inputBody:          "1235489802",
-			expectedStatusCode: http.StatusConflict,
+			inputLogin:         "dimma2login",
+			expectedStatusCode: http.StatusNoContent,
 		},
+	
 		{
 			name:               "Negative test order load - any other internal error",
-			inputMetod:         http.MethodPost,
+			inputMetod:         http.MethodGet,
 			inputEndpoint:      "/api/user/orders",
 			inputLogin:         "dimma8",
-			inputBody:          "1235489802",
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 	}
@@ -171,9 +147,9 @@ func TestHandler_List(t *testing.T) {
 		t.Run(tCase.name, func(t *testing.T) {
 			// конфигурирование тестового сервера
 			rout := chi.NewRouter()
-			rout.Post("/api/user/orders", h.List)
+			rout.Get("/api/user/orders", h.List)
 			// конфигурирование запроса
-			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
+			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, nil)
 			// контекст логина
 			tkn := jwt.New()
 			tkn.Set(`login`, tCase.inputLogin)
