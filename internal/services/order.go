@@ -16,7 +16,7 @@ import (
 )
 
 // интерфейс методов хранилища для Order
-type Order interface {
+type OrderStorageProvider interface {
 	Load(ctx context.Context, login string, orderNum string) (err error)
 	Update(ctx context.Context, login string, dc models.OrderSatus) (err error)
 	List(ctx context.Context, login string) (ec []models.OrdersList, err error)
@@ -24,34 +24,34 @@ type Order interface {
 
 // структура конструктора бизнес логики Order
 type OrderService struct {
-	storage   Order
+	storage OrderStorageProvider
 	CalcSys string
 }
 
 // конструктор бизнес логики Order
-func NewOrderService(oStorage Order, calcSys string) *OrderService {
+func NewOrderService(oStorage OrderStorageProvider, calcSys string) *OrderService {
 	return &OrderService{
 		oStorage,
 		calcSys,
 	}
 }
 
-// сервис загрузки пользователем номера заказа для расчёта
-func (storage *OrderService) Load(ctx context.Context, login string, orderNum string) (err error) {
+// сервис загрузки пользователем в систему начисления баллов номера нового заказа для расчёта
+func (svc *OrderService) Load(ctx context.Context, login string, orderNum string) (err error) {
 	// проверка up and running внешнего сервиса
-	rsp, err := http.Get(storage.CalcSys)
+	rsp, err := http.Get(svc.CalcSys)
 	if err != nil {
 		log.Printf("remoute service error: %s", err)
 		return
 	}
 	defer rsp.Body.Close()
 	// запись нового заказа в хранилище
-	err = storage.storage.Load(ctx, login, orderNum)
+	err = svc.storage.Load(ctx, login, orderNum)
 	if err != nil {
 		return err
 	}
 	// создание ссылки для запроса в систему начисления баллов
-	insertLink := storage.CalcSys + "/api/orders"
+	insertLink := svc.CalcSys + "/api/orders"
 	// создание JSON для запроса в систему начисления баллов
 	bodyJSON := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
 	// запрос регистрации заказа в системе расчета баллов
@@ -65,6 +65,9 @@ func (storage *OrderService) Load(ctx context.Context, login string, orderNum st
 	// запуск горутины обновления статуса начсления баллов по заказу
 	go func() {
 
+		// создаем ссылку для обноления статуса начислений по заказу
+		linkUpd := fmt.Sprintf("%s/api/orders/%s", svc.CalcSys, orderNum)
+		
 		for {
 			// переопередяляем контекст с таймаутом
 			ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
@@ -72,8 +75,7 @@ func (storage *OrderService) Load(ctx context.Context, login string, orderNum st
 			defer cancel()
 			// пауза
 			time.Sleep(settings.RequestsTimeout)
-			// создаем ссылку для обноления статуса начислений по заказу
-			linkUpd := fmt.Sprintf("%s/api/orders/%s", storage.CalcSys, orderNum)
+			
 			// отпарвляем запрос на получения обновленных данных по заказу
 			rGet, err := http.Get(linkUpd)
 			if err != nil {
@@ -81,7 +83,7 @@ func (storage *OrderService) Load(ctx context.Context, login string, orderNum st
 				return
 			}
 			// выполняем дальше, если 200 код ответа
-			if rGet.StatusCode == 200 {
+			if rGet.StatusCode == http.StatusOK {
 				// десериализация тела ответа системы
 				dc := models.OrderSatus{}
 				err = json.NewDecoder(rGet.Body).Decode(&dc)
@@ -90,7 +92,7 @@ func (storage *OrderService) Load(ctx context.Context, login string, orderNum st
 					return
 				}
 
-				err = storage.storage.Update(ctx, login, dc)
+				err = svc.storage.Update(ctx, login, dc)
 				if err != nil {
 					log.Printf("sr.storage.StorageNewOrderUpdate error :%s", err)
 					return
@@ -103,7 +105,7 @@ func (storage *OrderService) Load(ctx context.Context, login string, orderNum st
 				}
 			}
 			// если приходит 429 код ответа, увеличиваем таймаут запросов на значение в Retry-After
-			if rGet.StatusCode == 429 {
+			if rGet.StatusCode == http.StatusTooManyRequests {
 				timeout, err := strconv.Atoi(rGet.Header.Get("Retry-After"))
 				if err != nil {
 					log.Printf("error converting Retry-After to int:%s", err)
@@ -120,8 +122,8 @@ func (storage *OrderService) Load(ctx context.Context, login string, orderNum st
 }
 
 // сервис получения списка размещенных пользователем заказов, сортировка выдачи по времени загрузки
-func (storage *OrderService) List(ctx context.Context, login string) (ec []models.OrdersList, err error) {
-	ec, err = storage.storage.List(ctx, login)
+func (svc *OrderService) List(ctx context.Context, login string) (ec []models.OrdersList, err error) {
+	ec, err = svc.storage.List(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
