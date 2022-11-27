@@ -31,6 +31,7 @@ func init() {
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 }
 
+
 // переменные по умолчанию
 const (
 	defServAddr   = "localhost:8000"
