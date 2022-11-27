@@ -72,64 +72,9 @@ func (svc *OrderService) Load(ctx context.Context, login string, orderNum string
 
 	task := &models.Task{
 		LinkUpd: linkUpd,
-		Login: login,
-
+		Login:   login,
 	}
 	svc.pool.AppendTask(*task)
-
-	// запуск горутины обновления статуса начсления баллов по заказу
-	/* 	go func() {
-
-		for {
-			// переопередяляем контекст с таймаутом
-			ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
-			// освобождаем ресурс
-			defer cancel()
-			// пауза
-			time.Sleep(settings.RequestsTimeout)
-
-			// отпарвляем запрос на получения обновленных данных по заказу
-			rGet, err := http.Get(linkUpd)
-			if err != nil {
-				log.Printf("gorutine http Get error :%s", err)
-				return
-			}
-			// выполняем дальше, если 200 код ответа
-			if rGet.StatusCode == http.StatusOK {
-				// десериализация тела ответа системы
-				dc := models.OrderSatus{}
-				err = json.NewDecoder(rGet.Body).Decode(&dc)
-				if err != nil {
-					log.Printf("unmarshal error ServiceNewOrderLoad gorutine: %s", err)
-					return
-				}
-
-				err = svc.storage.Update(ctx, login, dc)
-				if err != nil {
-					log.Printf("sr.storage.StorageNewOrderUpdate error :%s", err)
-					return
-				}
-				// логируем
-				log.Printf("login %s update order %s status to %s with accrual %v", login, dc.Order, dc.Status, dc.Accrual)
-				if dc.Status == "INVALID" || dc.Status == "PROCESSED" {
-					log.Printf("order %s has updated status to %s", dc.Order, dc.Status)
-					return
-				}
-			}
-			// если приходит 429 код ответа, увеличиваем таймаут запросов на значение в Retry-After
-			if rGet.StatusCode == http.StatusTooManyRequests {
-				timeout, err := strconv.Atoi(rGet.Header.Get("Retry-After"))
-				if err != nil {
-					log.Printf("error converting Retry-After to int:%s", err)
-					return
-				}
-				// увеличиваем паузу в соотвествии с Retry-After
-				settings.RequestsTimeout = time.Duration(timeout) * 1000 * time.Millisecond
-			}
-			// закрываем ресурс
-			defer rGet.Body.Close()
-		}
-	}() */
 	return err
 }
 
