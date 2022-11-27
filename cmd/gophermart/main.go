@@ -50,7 +50,6 @@ func main() {
 	ticker := time.NewTicker(settings.RequestsTimeout)
 	queue := deque.New[models.Task]()
 	pool := workerpool.NewPool(*queue, settings.WorkersQty, ticker, storage)
-	//defer close(pool.)
 
 	// конструкторы User
 	serviceUser := services.NewUserService(storage)
