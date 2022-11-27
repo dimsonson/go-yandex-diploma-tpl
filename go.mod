@@ -8,6 +8,7 @@ require (
 	github.com/calmh/luhn v2.0.0+incompatible // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
+	github.com/edwingeng/deque v1.0.3 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/go-chi/chi/v5 v5.0.7 // indirect
 	github.com/go-chi/jwtauth v1.2.0 // indirect
