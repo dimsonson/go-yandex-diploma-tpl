@@ -33,6 +33,7 @@ const (
 	defCalcSysURL = "http://localhost:8080"
 )
 
+
 func main() {
 	// получаем переменные
 	dlink, calcSys, addr := flagsVars()
