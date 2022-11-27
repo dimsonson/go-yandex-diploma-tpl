@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// структура пула воркеров
 type Pool struct {
 	TasksQ        deque.Deque[models.Task]
 	Workers       []*Worker
@@ -20,9 +21,10 @@ type Pool struct {
 	timeout       *time.Ticker
 	storage       StorageProvider
 }
-
+// канал остановки Pool
 var done = make(chan struct{})
 
+// конструктор задачи для воркера
 func NewTask(LinkUpd string, Login string) *models.Task {
 	return &models.Task{
 		LinkUpd: LinkUpd,
@@ -77,6 +79,7 @@ func (p *Pool) Stop() {
 	}
 }
 
+// интерфейс доступа к хранилищу
 type StorageProvider interface {
 	Load(ctx context.Context, login string, orderNum string) (err error)
 	Update(ctx context.Context, login string, dc models.OrderSatus) (err error)
