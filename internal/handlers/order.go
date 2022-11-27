@@ -18,18 +18,18 @@ import (
 )
 
 // интерфейс методов бизнес логики Order
-type Order interface {
+type OrderServiceProvider interface {
 	Load(ctx context.Context, login string, orderNum string) (err error)
 	List(ctx context.Context, login string) (ec []models.OrdersList, err error)
 }
 
 // структура для конструктура обработчика Order
 type OrderHandler struct {
-	service Order
+	service OrderServiceProvider
 }
 
 // конструктор обработчика Order
-func NewOrderHandler(hOrder Order) *OrderHandler {
+func NewOrderHandler(hOrder OrderServiceProvider) *OrderHandler {
 	return &OrderHandler{
 		hOrder,
 	}

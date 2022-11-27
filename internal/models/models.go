@@ -46,3 +46,9 @@ type OrderSatus struct {
 	Accrual decimal.Decimal `json:"accrual"`
 }
 
+// задача для воркера работающего с внешним версиом начислений баллов лояльности
+type Task struct {
+	LinkUpd string
+	Login string
+	
+}

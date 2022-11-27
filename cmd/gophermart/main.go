@@ -6,16 +6,21 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/httprouter"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/storage"
+	"github.com/gammazero/deque"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/shopspring/decimal"
+
+	"github.com/dimsonson/go-yandex-diploma-tpl/cmd/gophermart/workerpool"
 )
 
 func init() {
@@ -40,11 +45,17 @@ func main() {
 	// конструкторы хранилища
 	storage := newStrorageProvider(dlink)
 	defer storage.ConnectionClose()
+
+	ticker := time.NewTicker(settings.RequestsTimeout)
+	queue := deque.New[models.Task]()
+	pool := workerpool.NewPool(*queue, settings.WorkersQty, ticker, storage)
+	//defer close(pool.)
+
 	// конструкторы User
 	serviceUser := services.NewUserService(storage)
 	handlerUser := handlers.NewUserHandler(serviceUser)
 	//конструкторы Order
-	serviceOrder := services.NewOrderService(storage, calcSys)
+	serviceOrder := services.NewOrderService(storage, calcSys, pool)
 	handlerOrder := handlers.NewOrderHandler(serviceOrder)
 	// конструкторы Balance
 	serviceBalance := services.NewBalanceService(storage)
@@ -59,7 +70,10 @@ func main() {
 	// канал остановки http сервера
 	idleConnsClosed := make(chan struct{})
 	// запуск сервера ожидающего остановку
-	go httpServerStart(srv, idleConnsClosed)
+	go httpServerStart(srv, pool, idleConnsClosed)
+
+	go pool.RunBackground()
+
 	log.Print("ready to serve requests on " + addr)
 	// получение сигнала остановки
 	<-idleConnsClosed
@@ -108,11 +122,13 @@ func newStrorageProvider(dlink string) (s *storage.StorageSQL) {
 }
 
 // запуск и gracefull завершение ListenAndServe
-func httpServerStart(srv *http.Server, idleConnsClosed chan struct{}) {
+func httpServerStart(srv *http.Server, pool *workerpool.Pool, idleConnsClosed chan struct{}) {
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
+		// останавливаем воркеры
+		pool.Stop()
 		// we received an interrupt signal, shut down.
 		if err := srv.Shutdown(context.Background()); err != nil {
 			// error from closing listeners, or context timeout:

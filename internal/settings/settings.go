@@ -29,3 +29,11 @@ var TokenAuth *jwtauth.JWTAuth = jwtauth.New(string(jwa.HS256), []byte(SignKey),
 
 // начальный таймаут для горутины запросов к сервису расчета баллов
 var RequestsTimeout = 500 * time.Millisecond
+
+// количество воркеров для запросов к внешнему сервису начисления баллов
+var WorkersQty int = 3
+
+// буффер канала task для воркеров
+var PipelineLenght int = 10
+
+

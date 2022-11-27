@@ -2,15 +2,11 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 
 	"github.com/rs/zerolog/log"
 )
@@ -22,17 +18,25 @@ type OrderStorageProvider interface {
 	List(ctx context.Context, login string) (ec []models.OrdersList, err error)
 }
 
+type PoolProvider interface {
+	RunBackground()
+	Stop()
+	AppendTask(models.Task)
+}
+
 // структура конструктора бизнес логики Order
 type OrderService struct {
 	storage OrderStorageProvider
 	CalcSys string
+	pool    PoolProvider
 }
 
 // конструктор бизнес логики Order
-func NewOrderService(oStorage OrderStorageProvider, calcSys string) *OrderService {
+func NewOrderService(oStorage OrderStorageProvider, calcSys string, pool PoolProvider) *OrderService {
 	return &OrderService{
 		oStorage,
 		calcSys,
+		pool,
 	}
 }
 
@@ -62,12 +66,20 @@ func (svc *OrderService) Load(ctx context.Context, login string, orderNum string
 	}
 	// освобождаем ресурс
 	defer rPost.Body.Close()
-	// запуск горутины обновления статуса начсления баллов по заказу
-	go func() {
 
-		// создаем ссылку для обноления статуса начислений по заказу
-		linkUpd := fmt.Sprintf("%s/api/orders/%s", svc.CalcSys, orderNum)
-		
+	// создаем ссылку для обноления статуса начислений по заказу
+	linkUpd := fmt.Sprintf("%s/api/orders/%s", svc.CalcSys, orderNum)
+
+	task := &models.Task{
+		LinkUpd: linkUpd,
+		Login: login,
+
+	}
+	svc.pool.AppendTask(*task)
+
+	// запуск горутины обновления статуса начсления баллов по заказу
+	/* 	go func() {
+
 		for {
 			// переопередяляем контекст с таймаутом
 			ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
@@ -75,7 +87,7 @@ func (svc *OrderService) Load(ctx context.Context, login string, orderNum string
 			defer cancel()
 			// пауза
 			time.Sleep(settings.RequestsTimeout)
-			
+
 			// отпарвляем запрос на получения обновленных данных по заказу
 			rGet, err := http.Get(linkUpd)
 			if err != nil {
@@ -117,7 +129,7 @@ func (svc *OrderService) Load(ctx context.Context, login string, orderNum string
 			// закрываем ресурс
 			defer rGet.Body.Close()
 		}
-	}()
+	}() */
 	return err
 }
 
