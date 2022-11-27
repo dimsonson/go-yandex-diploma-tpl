@@ -1,6 +1,7 @@
 package models
 
 import (
+	"sync"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -46,3 +47,10 @@ type OrderSatus struct {
 	Accrual decimal.Decimal `json:"accrual"`
 }
 
+type Deque[T any] struct {
+    buf    []T
+    head   int
+    tail   int
+    count  int
+    minCap int
+}
