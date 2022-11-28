@@ -26,22 +26,22 @@ func NewBalanceService(bStorage BalanceStorageProvider) *BalanceService {
 }
 
 // сервис получение текущего баланса счёта баллов лояльности пользователя
-func (storage *BalanceService) Status(ctx context.Context, login string) (ec models.LoginBalance, err error) {
-	ec, err = storage.storage.Status(ctx, login)
+func (svc *BalanceService) Status(ctx context.Context, login string) (ec models.LoginBalance, err error) {
+	ec, err = svc.storage.Status(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }
 
 // сервис списание баллов с накопительного счёта в счёт оплаты нового заказа
-func (storage *BalanceService) NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
-	err = storage.storage.NewWithdrawal(ctx, login, dc)
+func (svc *BalanceService) NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
+	err = svc.storage.NewWithdrawal(ctx, login, dc)
 	// возвращаем ошибку
 	return err
 }
 
 // сервис информации о всех выводах средств с накопительного счёта пользователем
-func (storage *BalanceService) WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
-	ec, err = storage.storage.WithdrawalsList(ctx, login)
+func (svc *BalanceService) WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
+	ec, err = svc.storage.WithdrawalsList(ctx, login)
 	// возвращаем структуру и ошибку
 	return ec, err
 }

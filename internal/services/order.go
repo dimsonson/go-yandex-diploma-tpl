@@ -14,7 +14,6 @@ import (
 // интерфейс методов хранилища для Order
 type OrderStorageProvider interface {
 	Load(ctx context.Context, login string, orderNum string) (err error)
-	Update(ctx context.Context, login string, dc models.OrderSatus) (err error)
 	List(ctx context.Context, login string) (ec []models.OrdersList, err error)
 }
 

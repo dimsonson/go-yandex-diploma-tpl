@@ -24,7 +24,7 @@ func (mserv *Balance) Status(ctx context.Context, login string) (ec models.Login
 
 	default:
 		log.Printf("error for login: %s", login)
-		return ec, errors.New("something wrong woth server")
+		return ec, errors.New("something wrong with server")
 	}
 
 }
@@ -40,7 +40,7 @@ func (mserv *Balance) NewWithdrawal(ctx context.Context, login string, dc models
 		return errors.New("new order number already exist")
 	default:
 		log.Printf("error for login: %s", login)
-		return errors.New("something wrong woth server")
+		return errors.New("something wrong with server")
 	}
 
 }

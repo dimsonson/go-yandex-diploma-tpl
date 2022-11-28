@@ -28,7 +28,7 @@ func NewUserService(uStorage UserStorageProvider) *UserService {
 	}
 }
 
-func (storage *UserService) Create(ctx context.Context, dc models.DecodeLoginPair) (err error) {
+func (svc *UserService) Create(ctx context.Context, dc models.DecodeLoginPair) (err error) {
 	// сощдание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
 	if err != nil {
@@ -36,11 +36,11 @@ func (storage *UserService) Create(ctx context.Context, dc models.DecodeLoginPai
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = storage.storage.Create(ctx, dc.Login, passwHex)
+	err = svc.storage.Create(ctx, dc.Login, passwHex)
 	return err
 }
 
-func (storage *UserService) CheckAuthorization(ctx context.Context, dc models.DecodeLoginPair) (err error) {
+func (svc *UserService) CheckAuthorization(ctx context.Context, dc models.DecodeLoginPair) (err error) {
 	// создание хеш пароля для передачи в хранилище
 	passwHex, err := ToHex(dc.Password)
 	if err != nil {
@@ -48,7 +48,7 @@ func (storage *UserService) CheckAuthorization(ctx context.Context, dc models.De
 		return err
 	}
 	// передача пары логин:пароль в хранилище
-	err = storage.storage.CheckAuthorization(ctx, dc.Login, passwHex)
+	err = svc.storage.CheckAuthorization(ctx, dc.Login, passwHex)
 	return err
 }
 
