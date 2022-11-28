@@ -9,85 +9,147 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers/servicemock"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHandler_C1eate(t *testing.T) {
+func TestHandler_Status(t *testing.T) {
 	// определяем структуру теста
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
 		name                 string
 		inputMetod           string
 		inputEndpoint        string
-		inputBody            string
+		inputLogin           string
 		expectedStatusCode   int
 		expectedResponseBody string
-		//expectedHeader1        string
-		expectedHeader2 string
-		//expectedHeaderContent1 string
-		expectedHeaderContent2 string
+		expectedHeader1      string
+
+		expectedHeaderContent1 string
 	}{
 		// определяем все тесты
 		{
-			name:               "OK (positive) test for user registration",
-			inputMetod:         "POST",
-			inputEndpoint:      "/api/user/register",
-			inputBody:          `{ "login": "dimma", "password": "12345" }`,
-			expectedStatusCode: http.StatusOK,
-			// expectedHeader1:        "Content-Type",
-			// expectedHeaderContent1: "text/plain",
-			expectedHeader2:        "Authorization",
-			expectedHeaderContent2: "Bearer",
+			name:                   "Positive test for user balance status",
+			inputMetod:             http.MethodGet,
+			inputEndpoint:          "/api/user/balance",
+			inputLogin:             "dimma",
+			expectedStatusCode:     http.StatusOK,
+			expectedHeader1:        "Content-Type",
+			expectedHeaderContent1: "application/json",
 		},
 		{
-			name:               "Negative test user registration - wrong JSON",
-			inputMetod:         "POST",
-			inputEndpoint:      "/api/user/register",
-			inputBody:          `{ "login": "dimma, "password": "12345" }`,
-			expectedStatusCode: http.StatusBadRequest,
-			//expectedHeader1:        "Content-Type",
-			//expectedHeaderContent1: "text/plain; charset=utf-8",
-		},
-		{
-			name:               "Negative test user registration - login exist",
-			inputMetod:         "POST",
-			inputEndpoint:      "/api/user/register",
-			inputBody:          `{ "login": "dimma2login", "password": "12345" }`,
-			expectedStatusCode: http.StatusConflict,
-			//expectedHeader1:        "Content-Type",
-			//expectedHeaderContent1: "text/plain; charset=utf-8",
-		},
-		{
-			name:               "Negative test user registration - server error",
-			inputMetod:         "POST",
-			inputEndpoint:      "/api/user/register",
-			inputBody:          `{ "login": "dimmaServErr", "password": "12345" }`,
-			expectedStatusCode: http.StatusInternalServerError,
-			//expectedHeader1:        "Content-Type",
-			//expectedHeaderContent1: "text/plain; charset=utf-8",
+			name:                   "Negative test for user balance status - Server error",
+			inputMetod:             http.MethodGet,
+			inputEndpoint:          "/api/user/balance",
+			inputLogin:             "dimma2",
+			expectedStatusCode:     http.StatusInternalServerError,
+			expectedHeader1:        "Content-Type",
+			expectedHeaderContent1: "application/json",
 		},
 	}
-	s := &servicemock.User{}
-	h := handlers.NewUserHandler(s)
+
+	s := &servicemock.Balance{}
+	h := handlers.NewBalanceHandler(s)
 
 	for _, tCase := range tests {
 		// запускаем каждый тест
 		t.Run(tCase.name, func(t *testing.T) {
 			// конфигурирование тестового сервера
 			rout := chi.NewRouter()
-			rout.Post("/api/user/register", h.Create)
+			rout.Get(tCase.inputEndpoint, h.Status)
 			// конфигурирование запроса
-			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
+			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, nil)
+			// контекст логина
+			tkn := jwt.New()
+			tkn.Set(`login`, tCase.inputLogin)
+			rctx := jwtauth.NewContext(request.Context(), tkn, nil)
+			request = request.WithContext(rctx)
 			// создание запроса
 			w := httptest.NewRecorder()
+			w.Header().Set("Authorization", "Bearer "+tCase.inputLogin)
 			// запуск
 			rout.ServeHTTP(w, request)
 			// оценка результатов
 			assert.Equal(t, tCase.expectedStatusCode, w.Code)
-			if w.Code == http.StatusOK {
-				assert.Contains(t, w.Header().Get(tCase.expectedHeader2), tCase.expectedHeaderContent2)
-			}
+			assert.Equal(t, tCase.expectedHeaderContent1, w.Header().Get(tCase.expectedHeader1))
 
+		})
+	}
+}
+
+func TestHandler_NewWithdrawal(t *testing.T) {
+	// определяем структуру теста
+	// создаём массив тестов: имя и желаемый результат
+	tests := []struct {
+		name                   string
+		inputMetod             string
+		inputEndpoint          string
+		inputLogin             string
+		inputBody              string
+		expectedStatusCode     int
+		expectedResponseBody   string
+		expectedHeader1        string
+		expectedHeaderContent1 string
+	}{
+		// определяем все тесты
+		{
+			name:               "Positive test for user new withdrawal",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/balance/withdraw",
+			inputLogin:         "dimma",
+			inputBody:          `{"order": "2377225624", "sum":751}`,
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:               "Negative test for user new withdrawal - insufficient funds",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/balance/withdraw",
+			inputLogin:         "dimma",
+			inputBody:          `{"order": "2377225624", "sum":1751}`,
+			expectedStatusCode: http.StatusPaymentRequired,
+		},
+		{
+			name:               "Negative test for user new withdrawal - new order number already exist",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/balance/withdraw",
+			inputLogin:         "dimma",
+			inputBody:          `{"order": "24564564536456", "sum":751}`,
+			expectedStatusCode: http.StatusUnprocessableEntity,
+		},
+		{
+			name:               "Negative test for user new withdrawal - InternalServerError",
+			inputMetod:         http.MethodPost,
+			inputEndpoint:      "/api/user/balance/withdraw",
+			inputLogin:         "dimma2",
+			inputBody:          `{"order": "2377225624", "sum":751}`,
+			expectedStatusCode: http.StatusInternalServerError,
+		},
+	}
+
+	s := &servicemock.Balance{}
+	h := handlers.NewBalanceHandler(s)
+
+	for _, tCase := range tests {
+		// запускаем каждый тест
+		t.Run(tCase.name, func(t *testing.T) {
+			// конфигурирование тестового сервера
+			rout := chi.NewRouter()
+			rout.Post(tCase.inputEndpoint, h.NewWithdrawal)
+			// конфигурирование запроса
+			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
+			// контекст логина
+			tkn := jwt.New()
+			tkn.Set(`login`, tCase.inputLogin)
+			rctx := jwtauth.NewContext(request.Context(), tkn, nil)
+			request = request.WithContext(rctx)
+			// создание запроса
+			w := httptest.NewRecorder()
+			w.Header().Set("Authorization", "Bearer "+tCase.inputLogin)
+			// запуск
+			rout.ServeHTTP(w, request)
+			// оценка результатов
+			assert.Equal(t, tCase.expectedStatusCode, w.Code)
 		})
 	}
 }
