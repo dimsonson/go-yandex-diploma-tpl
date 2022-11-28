@@ -8,6 +8,8 @@ type User struct {
 }
 
 func (mst *User) Create(ctx context.Context, login string, passwH string) (err error) {
+
+	
 	return err
 
 }

@@ -57,7 +57,7 @@ func TestHandler_Create(t *testing.T) {
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 	}
-	
+
 	s := &servicemock.User{}
 	h := handlers.NewUserHandler(s)
 
