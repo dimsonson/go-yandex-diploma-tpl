@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ShiraazMoollatjie/goluhn"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/go-chi/jwtauth/v5"
@@ -57,12 +58,12 @@ func (handler OrderHandler) Load(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// проверяем на алгоритм Луна, если не ок, возвращаем 422
-	/* err = goluhn.Validate(b)
+	err = goluhn.Validate(b)
 	if err != nil {
 		log.Printf("luhn algo check HandlerLoad error :%s", err)
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
-	} */
+	}
 	// получаем значение login из контекста запроса
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil {
