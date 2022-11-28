@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ShiraazMoollatjie/goluhn"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/go-chi/jwtauth/v5"
@@ -58,12 +57,12 @@ func (handler OrderHandler) Load(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// проверяем на алгоритм Луна, если не ок, возвращаем 422
-	err = goluhn.Validate(b)
+	/* err = goluhn.Validate(b)
 	if err != nil {
 		log.Printf("luhn algo check HandlerLoad error :%s", err)
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
-	}
+	} */
 	// получаем значение login из контекста запроса
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil {
@@ -71,7 +70,7 @@ func (handler OrderHandler) Load(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "order handling error", http.StatusInternalServerError)
 		return
 	}
-	// получаем значение из интерфейса
+	// получаем значение login из интерфейса
 	login, ok := claims["login"].(string)
 	if !ok {
 		log.Printf("interface assertion error HandlerLoad: %s", err)

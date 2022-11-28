@@ -2,6 +2,7 @@ package workerpool
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
@@ -19,8 +20,10 @@ type Pool struct {
 	runBackground chan bool
 	task          *models.Task
 	timeout       *time.Ticker
+	mu            sync.Mutex
 	storage       StorageProvider
 }
+
 // канал остановки Pool
 var done = make(chan struct{})
 
@@ -46,6 +49,8 @@ func NewPool(tasks deque.Deque[models.Task], concurrency int, timeout *time.Tick
 
 // AddTask добавляет таски в pool
 func (p *Pool) AppendTask(task models.Task) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.TasksQ.PushBack(task)
 }
 
@@ -65,7 +70,9 @@ func (p *Pool) RunBackground() {
 			return
 		default:
 			if lenQ := p.TasksQ.Len(); lenQ > 0 {
+				p.mu.Lock()
 				p.collector <- p.TasksQ.PopFront()
+				p.mu.Unlock()
 			}
 		}
 	}

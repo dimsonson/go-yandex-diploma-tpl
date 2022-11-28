@@ -18,7 +18,7 @@ type Worker struct {
 	taskChan chan models.Task
 	quit     chan bool
 	timeoutW *time.Ticker
-	storage      StorageProvider
+	storage  StorageProvider
 }
 
 // NewWorker возвращает новый экземпляр worker-а
@@ -69,6 +69,13 @@ func (wr *Worker) Job(task models.Task) {
 			log.Printf("gorutine http Get error :%s", err)
 			return
 		}
+		if rGet.StatusCode == http.StatusNoContent || rGet.StatusCode == http.StatusConflict {
+			log.Printf("status code %v recived from extenal calculation service", rGet.StatusCode)
+			return
+		}
+
+		log.Printf("status code %v recived from extenal calculation service", rGet.StatusCode)
+		
 		// выполняем дальше, если 200 код ответа
 		if rGet.StatusCode == http.StatusOK {
 			// десериализация тела ответа системы

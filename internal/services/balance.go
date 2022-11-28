@@ -7,7 +7,7 @@ import (
 )
 
 // интерфейс методов хранилища для Balance
-type Balance interface {
+type BalanceStorageProvider interface {
 	NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
 	WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
 	Status(ctx context.Context, login string) (ec models.LoginBalance, err error)
@@ -15,11 +15,11 @@ type Balance interface {
 
 // структура конструктора бизнес логики Balance
 type BalanceService struct {
-	storage Balance
+	storage BalanceStorageProvider
 }
 
 // конструктор бизнес логики Balance
-func NewBalanceService(bStorage Balance) *BalanceService {
+func NewBalanceService(bStorage BalanceStorageProvider) *BalanceService {
 	return &BalanceService{
 		bStorage,
 	}

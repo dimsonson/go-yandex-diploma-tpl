@@ -11,18 +11,18 @@ import (
 )
 
 // интерфейс методов хранилища для User
-type User interface {
+type UserStorageProvider interface {
 	Create(ctx context.Context, login string, passwH string) (err error)
 	CheckAuthorization(ctx context.Context, login string, passwHex string) (err error)
 }
 
 // структура конструктора бизнес логики User
 type UserService struct {
-	storage User
+	storage UserStorageProvider
 }
 
 // конструктор бизнес логики User
-func NewUserService(uStorage User) *UserService {
+func NewUserService(uStorage UserStorageProvider) *UserService {
 	return &UserService{
 		uStorage,
 	}

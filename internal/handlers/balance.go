@@ -16,7 +16,7 @@ import (
 )
 
 // интерфейс методов бизнес логики type Balance
-type Balance interface {
+type BalanceServiceProvider interface {
 	Status(ctx context.Context, login string) (ec models.LoginBalance, err error)
 	NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error)
 	WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error)
@@ -24,11 +24,11 @@ type Balance interface {
 
 // структура для конструктура обработчика Balance
 type BalanceHandler struct {
-	service Balance
+	service BalanceServiceProvider
 }
 
 // конструктор обработчика Balance
-func NewBalanceHandler(hBalance Balance) *BalanceHandler {
+func NewBalanceHandler(hBalance BalanceServiceProvider) *BalanceHandler {
 	return &BalanceHandler{
 		hBalance,
 	}

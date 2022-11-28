@@ -14,18 +14,18 @@ import (
 )
 
 // интерфейс методов бизнес логики User
-type User interface {
+type UserServiceProvider interface {
 	Create(ctx context.Context, dc models.DecodeLoginPair) (err error)
 	CheckAuthorization(ctx context.Context, dc models.DecodeLoginPair) (err error)
 }
 
 // структура для конструктура обработчика User
 type UserHandler struct {
-	service User
+	service UserServiceProvider
 }
 
 // конструктор обработчика User
-func NewUserHandler(hUser User) *UserHandler {
+func NewUserHandler(hUser UserServiceProvider) *UserHandler {
 	return &UserHandler{
 		hUser,
 	}
