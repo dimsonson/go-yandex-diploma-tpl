@@ -36,6 +36,7 @@ func NewSQLStorage(p string) *StorageSQL {
 		log.Printf("database connection is not alive: %s%s%s", settings.ColorRed, err, settings.ColorReset)
 		return nil
 	}
+	
 	// создаем текст запроса
 	q := `CREATE TABLE IF NOT EXISTS users
 	(
