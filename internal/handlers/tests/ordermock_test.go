@@ -75,7 +75,7 @@ func TestHandler_Load(t *testing.T) {
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 	}
-	s := &servicemock.Order{}
+	s := &servicemock.OrderServiceMock{}
 	h := handlers.NewOrderHandler(s)
 
 	for _, tCase := range tests {
@@ -136,7 +136,7 @@ func TestHandler_List(t *testing.T) {
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 	}
-	s := &servicemock.Order{}
+	s := &servicemock.OrderServiceMock{}
 	h := handlers.NewOrderHandler(s)
 
 	for _, tCase := range tests {

@@ -10,7 +10,6 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/go-chi/jwtauth/v5"
-	_ "github.com/shopspring/decimal"
 
 	"github.com/rs/zerolog/log"
 )

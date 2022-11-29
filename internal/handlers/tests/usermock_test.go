@@ -58,7 +58,7 @@ func TestHandler_Create(t *testing.T) {
 		},
 	}
 
-	s := &servicemock.User{}
+	s := &servicemock.UserServiceMock{}
 	h := handlers.NewUserHandler(s)
 
 	for _, tCase := range tests {
@@ -128,7 +128,7 @@ func TestHandler_CheckAuthorization(t *testing.T) {
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 	}
-	s := &servicemock.User{}
+	s := &servicemock.UserServiceMock{}
 	h := handlers.NewUserHandler(s)
 
 	for _, tCase := range tests {

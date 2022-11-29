@@ -7,10 +7,12 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 )
 
-type User struct {
+// имплементация интерфейса UserServiceProvider
+type UserServiceMock struct {
 }
 
-func (msrv *User) Create(ctx context.Context, dc models.DecodeLoginPair) (err error) {
+// заглушка
+func (msrv *UserServiceMock) Create(ctx context.Context, dc models.DecodeLoginPair) (err error) {
 	switch {
 	case dc.Login == "dimma" && dc.Password == "12345":
 		return nil
@@ -20,8 +22,8 @@ func (msrv *User) Create(ctx context.Context, dc models.DecodeLoginPair) (err er
 		return errors.New("something wrong woth server")
 	}
 }
-
-func (msrv *User) CheckAuthorization(ctx context.Context, dc models.DecodeLoginPair) (err error) {
+// заглушка
+func (msrv *UserServiceMock) CheckAuthorization(ctx context.Context, dc models.DecodeLoginPair) (err error) {
 	switch {
 	case dc.Login == "dimma" && dc.Password == "12345":
 		return nil

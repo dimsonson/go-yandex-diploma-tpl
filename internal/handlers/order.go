@@ -12,7 +12,6 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/go-chi/jwtauth/v5"
-	_ "github.com/shopspring/decimal"
 
 	"github.com/rs/zerolog/log"
 )
@@ -130,6 +129,5 @@ func (handler OrderHandler) List(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		// сериализуем и пишем тело ответа
 		json.NewEncoder(w).Encode(ec)
-
 	}
 }

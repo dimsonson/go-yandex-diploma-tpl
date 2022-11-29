@@ -8,7 +8,6 @@ import (
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
-	//_ "github.com/shopspring/decimal"
 
 	"github.com/rs/zerolog/log"
 )

@@ -69,7 +69,7 @@ func main() {
 	srv := &http.Server{Addr: addr, Handler: r}
 	// канал остановки http сервера
 	idleConnsClosed := make(chan struct{})
-	// запуск сервера ожидающего остановку
+	// запуск http сервера ожидающего остановку
 	go httpServerStart(srv, pool, idleConnsClosed)
 	// запуск пула воркеров
 	go pool.RunBackground()
