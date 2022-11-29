@@ -31,13 +31,6 @@ func init() {
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 }
 
-// переменные по умолчанию
-const (
-	defServAddr   = "localhost:8000"
-	defDBlink     = "postgres://postgres:1818@localhost:5432/gophm"
-	defCalcSysURL = "http://localhost:8080"
-)
-
 func main() {
 	// получаем переменные
 	dlink, calcSys, addr := flagsVars()
@@ -82,9 +75,9 @@ func main() {
 // парсинг флагов и валидация переменных окружения
 func flagsVars() (dlink string, calcSys string, addr string) {
 	// описываем флаги
-	addrFlag := flag.String("a", defServAddr, "HTTP Server address")
-	calcSysFlag := flag.String("r", defCalcSysURL, "Accruals calculation service URL")
-	dlinkFlag := flag.String("d", defDBlink, "Database URI link")
+	addrFlag := flag.String("a", settings.DefServAddr, "HTTP Server address")
+	calcSysFlag := flag.String("r", settings.DefCalcSysURL, "Accruals calculation service URL")
+	dlinkFlag := flag.String("d", settings.DefDBlink, "Database URI link")
 	// парсим флаги в переменные
 	flag.Parse()
 	// проверяем наличие переменной окружения, если ее нет или она не валидна, то используем значение из флага

@@ -23,17 +23,21 @@ const (
 	ColorReset  = "\u001b[0m"
 )
 
+// переменные по умолчанию
+const (
+	DefServAddr   = "localhost:8000"
+	DefDBlink     = "postgres://postgres:1818@localhost:5432/gophm"
+	DefCalcSysURL = "http://localhost:8080"
+)
 
 // переменная ключа токена
 var TokenAuth *jwtauth.JWTAuth = jwtauth.New(string(jwa.HS256), []byte(SignKey), nil)
 
 // начальный таймаут для горутины запросов к сервису расчета баллов
-var RequestsTimeout = 500 * time.Millisecond
+var RequestsTimeout = 800 * time.Millisecond
 
 // количество воркеров для запросов к внешнему сервису начисления баллов
 var WorkersQty int = 3
 
 // буффер канала task для воркеров
 var PipelineLenght int = 10
-
-
