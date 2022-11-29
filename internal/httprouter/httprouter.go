@@ -46,7 +46,7 @@ func NewRouter(userHandler *handlers.UserHandler, orderHandler *handlers.OrderHa
 		r.Post("/api/user/login", userHandler.CheckAuthorization)
 	})
 
-	// возврат ошибки 404 для всех остальных запросов - chi
+	// возврат ошибки 404 для всех остальных запросов - роутер chi
 	
 	return rout
 }
