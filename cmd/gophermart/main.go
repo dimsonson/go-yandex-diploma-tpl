@@ -31,7 +31,6 @@ func init() {
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 }
 
-
 // переменные по умолчанию
 const (
 	defServAddr   = "localhost:8000"
@@ -46,18 +45,19 @@ func main() {
 	// конструкторы хранилища
 	storage := newStrorageProvider(dlink)
 	defer storage.ConnectionClose()
-
+	// создаем тикер для воркер пула апдейта статусов заказов
 	ticker := time.NewTicker(settings.RequestsTimeout)
+	// создаем очередь для задач воркер пула апдейта статусов заказов
 	queue := deque.New[models.Task]()
+	// создаем воркер пул апдейта статусов заказов
 	pool := workerpool.NewPool(*queue, settings.WorkersQty, ticker, storage)
-
-	// конструкторы User
+	// конструкторы интерфейса User
 	serviceUser := services.NewUserService(storage)
 	handlerUser := handlers.NewUserHandler(serviceUser)
-	//конструкторы Order
+	//конструкторы интерфейса Order
 	serviceOrder := services.NewOrderService(storage, calcSys, pool)
 	handlerOrder := handlers.NewOrderHandler(serviceOrder)
-	// конструкторы Balance
+	// конструкторы интерфейса Balance
 	serviceBalance := services.NewBalanceService(storage)
 	handlerBalance := handlers.NewBalanceHandler(serviceBalance)
 	// конструктор роутера
@@ -71,11 +71,10 @@ func main() {
 	idleConnsClosed := make(chan struct{})
 	// запуск сервера ожидающего остановку
 	go httpServerStart(srv, pool, idleConnsClosed)
-
+	// запуск пула воркеров
 	go pool.RunBackground()
-
 	log.Print("ready to serve requests on " + addr)
-	// получение сигнала остановки
+	// получение сигнала остановки сервера и пула
 	<-idleConnsClosed
 	log.Print("gracefully shutting down")
 }
@@ -106,7 +105,6 @@ func flagsVars() (dlink string, calcSys string, addr string) {
 		log.Print("eviroment variable DATABASE_URI is not exist", dlink)
 		dlink = *dlinkFlag
 	}
-
 	return dlink, calcSys, addr
 }
 
@@ -124,20 +122,23 @@ func newStrorageProvider(dlink string) (s *storage.StorageSQL) {
 // запуск и gracefull завершение ListenAndServe
 func httpServerStart(srv *http.Server, pool *workerpool.Pool, idleConnsClosed chan struct{}) {
 	go func() {
+		// канал инциализирущего сигнала остановки сервера и пула воркеров
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
-		// останавливаем воркеры
+		// сигнал получен, останавливаем воркеры
 		pool.Stop()
-		// we received an interrupt signal, shut down.
+		// сигнал получен, останавливаем сервер
 		if err := srv.Shutdown(context.Background()); err != nil {
-			// error from closing listeners, or context timeout:
+			// обработа ошибки остановки сервера
 			log.Printf("HTTP server Shutdown error: %v", err)
 		}
+		// закрытие управляющего канала установки
 		close(idleConnsClosed)
 	}()
+	// запуск http сервера
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		// Error starting or closing listener:
+		// обработка ошибки запуска сервера
 		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
 	}
 }

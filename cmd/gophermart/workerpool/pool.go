@@ -32,7 +32,6 @@ func NewTask(LinkUpd string, Login string) *models.Task {
 	return &models.Task{
 		LinkUpd: LinkUpd,
 		Login:   Login,
-		//service: service,
 	}
 }
 
@@ -56,15 +55,17 @@ func (p *Pool) AppendTask(task models.Task) {
 
 // RunBackground запускает pool в фоне
 func (p *Pool) RunBackground() {
+	// запуск воркеров с каналами получвения задач
 	log.Print("starting Pool")
 	for i := 1; i <= p.concurrency; i++ {
 		worker := NewWorker(p.collector, i, p.timeout, p.storage)
 		p.Workers = append(p.Workers, worker)
 		go worker.StartBackground()
 	}
-	p.runBackground = make(chan bool)
+	// передача задач из очереди в каналы воркеров
 	for {
 		select {
+		// остановка пула
 		case <-done:
 			log.Print("closing Pool")
 			return
@@ -78,7 +79,7 @@ func (p *Pool) RunBackground() {
 	}
 }
 
-// Stop останавливает запущенных в фоне worker-ов
+// Stop останавливает запущенных в фоне воркеров
 func (p *Pool) Stop() {
 	defer close(done)
 	for i := range p.Workers {

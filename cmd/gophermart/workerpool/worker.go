@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Worker контролирует всю работу
+// структура воркера
 type Worker struct {
 	ID       int
 	taskChan chan models.Task
@@ -21,7 +21,7 @@ type Worker struct {
 	storage  StorageProvider
 }
 
-// NewWorker возвращает новый экземпляр worker-а
+// конструктор экземпляра воркера
 func NewWorker(channel chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider) *Worker {
 	return &Worker{
 		ID:       ID,
@@ -32,7 +32,7 @@ func NewWorker(channel chan models.Task, ID int, timeout *time.Ticker, storage S
 	}
 }
 
-// StartBackground запускает worker-а в фоне
+// запуск воркера с выполнением задач по тикеру
 func (wr *Worker) StartBackground() {
 	log.Printf("starting Worker %d", wr.ID)
 	for {
@@ -47,7 +47,7 @@ func (wr *Worker) StartBackground() {
 	}
 }
 
-// Остановка quits для воркера
+// остановка воркеров
 func (wr *Worker) Stop() {
 	log.Printf("closing Worker %d", wr.ID)
 	go func() {
@@ -55,7 +55,7 @@ func (wr *Worker) Stop() {
 	}()
 }
 
-// / linkUpd string, login string, svc ServiceProvider
+// метод выполнения задачи для воркера
 func (wr *Worker) Job(task models.Task) {
 	for {
 		// переопередяляем контекст с таймаутом
@@ -69,13 +69,13 @@ func (wr *Worker) Job(task models.Task) {
 			log.Printf("gorutine http Get error :%s", err)
 			return
 		}
+		// завершаем задачу, если ордера нет в системе расчета баллов лояльности или заказ уже рассчитан
 		if rGet.StatusCode == http.StatusNoContent || rGet.StatusCode == http.StatusConflict {
-			log.Printf("status code %v recived from extenal calculation service", rGet.StatusCode)
+			log.Printf("status code %v recieved from extenal calculation service", rGet.StatusCode)
 			return
 		}
-
-		log.Printf("status code %v recived from extenal calculation service", rGet.StatusCode)
-		
+		// логгируем полученный статус заказа
+		log.Printf("status code %v recieved from extenal calculation service", rGet.StatusCode)
 		// выполняем дальше, если 200 код ответа
 		if rGet.StatusCode == http.StatusOK {
 			// десериализация тела ответа системы
@@ -85,14 +85,15 @@ func (wr *Worker) Job(task models.Task) {
 				log.Printf("unmarshal error ServiceNewOrderLoad gorutine: %s", err)
 				return
 			}
-
+			// обновляем статус ордера в хранилище
 			err = wr.storage.Update(ctx, task.Login, dc)
 			if err != nil {
 				log.Printf("sr.storage.StorageNewOrderUpdate error :%s", err)
 				return
 			}
-			// логируем
+			// логируем обновление в хранилище
 			log.Printf("login %s update order %s status to %s with accrual %v", task.Login, dc.Order, dc.Status, dc.Accrual)
+			// останавливаем задачу, если получен финальный стаус
 			if dc.Status == "INVALID" || dc.Status == "PROCESSED" {
 				log.Printf("order %s has updated status to %s", dc.Order, dc.Status)
 				return
