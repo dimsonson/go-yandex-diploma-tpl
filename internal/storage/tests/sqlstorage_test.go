@@ -16,7 +16,7 @@ func NewPostgreProvider(db *sql.DB) *storage.StorageSQL {
 	return &storage.StorageSQL{PostgreSQL: db}
 }
 
-func TestTodoItemPostgres_CheckAuthorization(t *testing.T) {
+func TestStorage_CheckAuthorization(t *testing.T) {
 	// создание заглушки
 	db, mock, err := sqlmock.New()
 	if err != nil {
