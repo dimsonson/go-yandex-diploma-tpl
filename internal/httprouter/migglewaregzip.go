@@ -3,26 +3,26 @@ package httprouter
 import (
 	"compress/gzip"
 	"io"
-	//"log"
+
 	"net/http"
 	"strings"
-	//"github.com/rs/zerolog"
-    "github.com/rs/zerolog/log"
+
+	"github.com/rs/zerolog/log"
 )
 
-// структура для записи зашифрованного ответа
+// структура для записи сжатого ответа
 type gzipWriter struct {
 	http.ResponseWriter
 	gzWriter io.Writer
 }
 
-// метод для записи зашифрованного ответа
+// метод для записи сжатого ответа
 func (w gzipWriter) Write(b []byte) (int, error) {
 	// w.gzWriter будет отвечать за gzip-сжатие, поэтому пишем в него
 	return w.gzWriter.Write(b)
 }
 
-// структура для чтения зашифрованного тела запроса
+// структура для чтения сжатого тела запроса
 type gzipReader struct {
 	gzipReader *gzip.Reader
 	gzipBody   io.ReadCloser
@@ -39,7 +39,7 @@ func (r gzipReader) Close() error {
 	return r.gzipBody.Close()
 }
 
-// метод для чтения зашифрованного тела запроса
+// метод для чтения сжатого тела запроса
 func (r gzipReader) Read(b []byte) (int, error) {
 	return r.gzipReader.Read(b)
 }

@@ -39,16 +39,15 @@ type WithdrawalsList struct {
 	ProcessedAt time.Time       `json:"processed_at"`
 }
 
-// статус ордера из истемы начислений
+// статус ордера из истемы начислений баллов лояльности
 type OrderSatus struct {
 	Order   string          `json:"order"`
 	Status  string          `json:"status"`
 	Accrual decimal.Decimal `json:"accrual"`
 }
 
-// задача для воркера работающего с внешним версиом начислений баллов лояльности
+// задача для воркера работающего с внешним сервиом начислений баллов лояльности
 type Task struct {
 	LinkUpd string
 	Login string
-	
 }
