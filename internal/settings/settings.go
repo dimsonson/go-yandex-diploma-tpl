@@ -28,7 +28,7 @@ const (
 var TokenAuth *jwtauth.JWTAuth = jwtauth.New(string(jwa.HS256), []byte(SignKey), nil)
 
 // начальный таймаут для горутины запросов к сервису расчета баллов
-var RequestsTimeout = 400 * time.Millisecond
+var RequestsTimeout = 300 * time.Millisecond
 
 // количество воркеров для запросов к внешнему сервису начисления баллов
 var WorkersQty int = 3
