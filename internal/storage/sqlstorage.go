@@ -30,13 +30,12 @@ func NewSQLStorage(p string) *StorageSQL {
 	if err != nil {
 		log.Printf("database opening error: %s%s%s", settings.ColorRed, err, settings.ColorReset)
 	}
-/* 	// проверяем соединение с postgres
+ 	// проверяем соединение с postgres
 	err = db.PingContext(ctx)
 	if err != nil {
 		log.Printf("database connection is not alive: %s%s%s", settings.ColorRed, err, settings.ColorReset)
 		return nil
 	}
-	 */
 	// создаем текст запроса
 	q := `CREATE TABLE IF NOT EXISTS users
 	(
