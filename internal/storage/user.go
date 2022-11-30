@@ -82,11 +82,12 @@ func (ms *StorageSQL) CheckAuthorization(ctx context.Context, login string, pass
 	err = ms.PostgreSQL.QueryRowContext(ctx, q, login).Scan(&passwDB)
 	if err != nil {
 		log.Printf("select StorageAuthorizationCheck SQL request scan error: %s", err)
+		return err
 	}
 	if passwDB != passwHex {
 		err = errors.New("login or password not exist")
 		log.Printf("select StorageAuthorizationCheck SQL: %s", err)
-		return err
+		//return err
 	}
 	return err
 }

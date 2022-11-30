@@ -3,6 +3,7 @@ package sqlstorage_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -40,7 +41,7 @@ func TestStorage_CheckAuthorization(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Ok",
+			name: "Positive test - autorization",
 			input: args{
 				login:    "dimma",
 				passwHex: "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
@@ -53,6 +54,36 @@ func TestStorage_CheckAuthorization(t *testing.T) {
 					WillReturnRows(rows)
 			},
 			wantErr: false,
+		},
+		{
+			name: "Negative test - wrong passw or login",
+			input: args{
+				login:    "dimma",
+				passwHex: "1",
+			},
+			want: errors.New("login or password not exist"),
+			mock: func(args args, err error) {
+				rows := sqlmock.NewRows([]string{"password"}).AddRow("2")
+				mock.ExpectQuery(`SELECT (.+) FROM users WHERE login (.+)`).
+					WithArgs(args.login).
+					WillReturnRows(rows)
+			},
+			wantErr: true,
+		},
+		{
+			name: "Negative test - sql DB down",
+			input: args{
+				login:    "dimma",
+				passwHex: "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
+			},
+			want: errors.New("FATAL: terminating connection due to administrator command (SQLSTATE 57P01)"),
+			mock: func(args args, err error) {
+				mock.ExpectQuery(`SELECT (.+) FROM users WHERE login (.+)`).
+					WithArgs(args.login).
+					WillReturnError(errors.New("FATAL: terminating connection due to administrator command (SQLSTATE 57P01)"))
+
+			},
+			wantErr: true,
 		},
 	}
 
