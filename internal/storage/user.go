@@ -87,7 +87,6 @@ func (ms *StorageSQL) CheckAuthorization(ctx context.Context, login string, pass
 	if passwDB != passwHex {
 		err = errors.New("login or password not exist")
 		log.Printf("select StorageAuthorizationCheck SQL: %s", err)
-		//return err
 	}
 	return err
 }

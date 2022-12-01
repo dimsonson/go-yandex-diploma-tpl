@@ -109,3 +109,134 @@ func TestStorage_CheckAuthorization(t *testing.T) {
 		})
 	}
 }
+
+func TestStorage_Create(t *testing.T) {
+	// создание заглушки
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+	r := NewPostgreProvider(db)
+	// принимаемые аргументы
+	type args struct {
+		login    string
+		passwHex string
+	}
+	// тип поведения заглушки
+	type mockBehavior func(args args, err error)
+	// табличный тест, будет дополнен негатвными сценариями
+	tests := []struct {
+		name    string
+		mock    mockBehavior
+		input   args
+		want   error
+		wantErr bool
+	}{
+		{
+			name: "Positive test - create user",
+			input: args{
+				login:    "dimma",
+				passwHex: "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
+			},
+			want: nil,
+			mock: func(args args, err error) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO users VALUES (.+)`).
+					WithArgs(args.login, args.passwHex).WillReturnResult(sqlmock.NewResult(0, 1)).WillReturnError(nil)
+				mock.ExpectExec(`INSERT INTO balance VALUES (.+)`).
+					WithArgs(args.login).WillReturnResult(sqlmock.NewResult(0, 1)).WillReturnError(nil)
+			},
+
+			wantErr: false,
+		},
+		{
+			name: "Negative test - create user - login exist - error at 1nd sql instruction",
+			input: args{
+				login:    "dimma2",
+				passwHex: "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
+			},
+			want: errors.New("login exist"),
+			mock: func(args args, err error) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO users VALUES (.+)`).
+					WithArgs(args.login, args.passwHex).WillReturnError(errors.New(`ERROR: duplicate key value violates unique constraint "pk_1_users" (SQLSTATE 23505)`))
+					
+				mock.ExpectRollback()
+			},
+			wantErr: true,
+		},
+		{
+			name: "Negative test - create user - database down at 1st sql instruction",
+			input: args{
+				login:    "dimma3",
+				passwHex: "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
+			},
+			want: errors.New("FATAL: terminating connection due to administrator command (SQLSTATE 57P01)"),
+			mock: func(args args, err error) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO users VALUES (.+)`).
+					WithArgs(args.login, args.passwHex).WillReturnError(errors.New(`FATAL: terminating connection due to administrator command (SQLSTATE 57P01)`))
+				mock.ExpectRollback()
+			},
+			wantErr: true,
+		},
+
+		{
+			name: "Negative test - database down at 2nd sql instruction",
+			input: args{
+				login:    "dimma",
+				passwHex: "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
+			},
+			want: errors.New("FATAL: terminating connection due to administrator command (SQLSTATE 57P01)"),
+			mock: func(args args, err error) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO users VALUES (.+)`).
+					WithArgs(args.login, args.passwHex).WillReturnResult(sqlmock.NewResult(0, 1)).WillReturnError(nil)
+				mock.ExpectExec(`INSERT INTO balance VALUES (.+)`).
+					WithArgs(args.login).WillReturnError(errors.New(`FATAL: terminating connection due to administrator command (SQLSTATE 57P01)`))
+				mock.ExpectRollback()
+			},
+			wantErr: true,
+		},
+		{
+			name: "Negative test - create user - login exist - err at 2nd sql instruction",
+			input: args{
+				login:    "dimma",
+				passwHex: "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
+			},
+			want: errors.New("login exist"),
+			mock: func(args args, err error) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO users VALUES (.+)`).
+					WithArgs(args.login, args.passwHex).WillReturnResult(sqlmock.NewResult(0, 1)).WillReturnError(nil)
+				mock.ExpectExec(`INSERT INTO balance VALUES (.+)`).
+					WithArgs(args.login).WillReturnError(errors.New(`ERROR: duplicate key value violates unique constraint "pk_1_users" (SQLSTATE 23505)`))
+				mock.ExpectRollback()
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mock(tt.input, tt.want)
+			// создаем контекст
+			ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
+			// освобождаем ресурс
+			defer cancel()
+			// запуск метода запроса
+			err := r.Create(ctx, tt.input.login, tt.input.passwHex)
+			// проверки
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, err)
+			}
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("there were unfulfilled expectations: %s", err)
+			}
+		})
+	}
+}
