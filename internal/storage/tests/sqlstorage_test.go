@@ -8,6 +8,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
+	"github.com/jackc/pgconn"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/storage"
 	"github.com/stretchr/testify/assert"
@@ -125,12 +126,33 @@ func TestStorage_Create(t *testing.T) {
 	}
 	// тип поведения заглушки
 	type mockBehavior func(args args, err error)
-	// табличный тест, будет дополнен негатвными сценариями
+	// ошибка нарушение уникальности значений при вставке
+	duplicateErr := &pgconn.PgError{
+		Severity:         "ERROR",
+		Code:             "23505",
+		Message:          "duplicate key value violates unique constraint \"pk_1_users\"",
+		Detail:           "Key (login)=(dimma) already exists.",
+		Hint:             "",
+		Position:         0,
+		InternalPosition: 0,
+		InternalQuery:    "",
+		Where:            "",
+		SchemaName:       "public",
+		TableName:        "users",
+		ColumnName:       "",
+		DataTypeName:     "",
+		ConstraintName:   "pk_1_users",
+		File:             "nbtinsert.c",
+		Line:             670,
+		Routine:          "_bt_check_unique",
+	}
+
+	// табличный тест
 	tests := []struct {
 		name    string
 		mock    mockBehavior
 		input   args
-		want   error
+		want    error
 		wantErr bool
 	}{
 		{
@@ -160,8 +182,7 @@ func TestStorage_Create(t *testing.T) {
 			mock: func(args args, err error) {
 				mock.ExpectBegin()
 				mock.ExpectExec(`INSERT INTO users VALUES (.+)`).
-					WithArgs(args.login, args.passwHex).WillReturnError(errors.New(`ERROR: duplicate key value violates unique constraint "pk_1_users" (SQLSTATE 23505)`))
-					
+					WithArgs(args.login, args.passwHex).WillReturnError(duplicateErr)
 				mock.ExpectRollback()
 			},
 			wantErr: true,
@@ -211,7 +232,7 @@ func TestStorage_Create(t *testing.T) {
 				mock.ExpectExec(`INSERT INTO users VALUES (.+)`).
 					WithArgs(args.login, args.passwHex).WillReturnResult(sqlmock.NewResult(0, 1)).WillReturnError(nil)
 				mock.ExpectExec(`INSERT INTO balance VALUES (.+)`).
-					WithArgs(args.login).WillReturnError(errors.New(`ERROR: duplicate key value violates unique constraint "pk_1_users" (SQLSTATE 23505)`))
+					WithArgs(args.login).WillReturnError(duplicateErr)
 				mock.ExpectRollback()
 			},
 			wantErr: true,
@@ -230,9 +251,9 @@ func TestStorage_Create(t *testing.T) {
 			// проверки
 			if tt.wantErr {
 				assert.Error(t, err)
+				assert.Equal(t, tt.want, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want, err)
 			}
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
