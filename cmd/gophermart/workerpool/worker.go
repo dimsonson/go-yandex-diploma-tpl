@@ -1,14 +1,12 @@
 package workerpool
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/rs/zerolog/log"
 )
 
@@ -58,11 +56,6 @@ func (wr *Worker) Stop() {
 // метод выполнения задачи для воркера
 func (wr *Worker) Job(task models.Task) {
 	for {
-		// переопередяляем контекст с таймаутом
-		ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
-		// освобождаем ресурс
-		defer cancel()
-
 		// отпарвляем запрос на получения обновленных данных по заказу
 		rGet, err := http.Get(task.LinkUpd)
 		if err != nil {
@@ -86,7 +79,7 @@ func (wr *Worker) Job(task models.Task) {
 				return
 			}
 			// обновляем статус ордера в хранилище
-			err = wr.storage.Update(ctx, task.Login, dc)
+			err = wr.storage.Update(task.Ctx, task.Login, dc)
 			if err != nil {
 				log.Printf("sr.storage.StorageNewOrderUpdate error :%s", err)
 				return

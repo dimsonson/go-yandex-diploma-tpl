@@ -50,11 +50,12 @@ func NewPool(tasks deque.Deque[models.Task], concurrency int, timeout *time.Tick
 }
 
 // AddTask добавляет таски в pool
-func (p *Pool) AppendTask(login, orderNum string) {
+func (p *Pool) AppendTask(ctx context.Context, login, orderNum string) {
 	// создаем ссылку для обноления статуса начислений по заказу
 	linkUpd := fmt.Sprintf("%s/api/orders/%s", p.calcSys, orderNum)
 	// создаем структуру для передачи в пул воркерам
 	task := models.Task{
+		Ctx:     ctx,
 		LinkUpd: linkUpd,
 		Login:   login,
 	}
