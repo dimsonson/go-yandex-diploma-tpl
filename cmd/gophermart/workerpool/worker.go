@@ -103,7 +103,7 @@ func (wr *Worker) Job(ctx context.Context, task models.Task) {
 				return
 			}
 			// делаем паузу в соотвествии с Retry-After
-			time.Sleep(time.Duration(timeout) * 1000 * time.Millisecond)
+			<-time.After(time.Duration(timeout) * 1000 * time.Millisecond)
 		}
 		// закрываем ресурс
 		defer rGet.Body.Close()
