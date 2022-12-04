@@ -68,7 +68,7 @@ func main() {
 	// конфигурирование http сервера
 	srv := &http.Server{Addr: addr, Handler: r}
 	// запуск http сервера ожидающего остановку
-	go httpServerShutdown(ctx, srv) //, pool) //, idleConnsClosed)
+	go httpServerShutdown(ctx, srv) 
 	// запуск пула воркеров
 	wg.Add(1)
 	go pool.RunBackground()
@@ -78,7 +78,7 @@ func main() {
 		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
 	} 
 	wg.Wait()
-	log.Print("http server gracefully shutting down")
+	log.Print("http server gracefully shutdown")
 }
 
 // парсинг флагов и валидация переменных окружения
@@ -121,24 +121,14 @@ func newStrorageProvider(dlink string) (s *storage.StorageSQL) {
 	return s
 }
 
-// запуск и gracefull завершение ListenAndServe
-func httpServerShutdown(ctx context.Context, srv *http.Server) { //, pool *workerpool.Pool) { //, idleConnsClosed chan struct{}) {
-	//go func() {
-	// канал инциализирущего сигнала остановки сервера и пула воркеров
-	/* sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
-	<-sigint
-	// сигнал получен, останавливаем воркеры
-	pool.Stop() */
-	// сигнал получен, останавливаем сервер
-
+// gracefull завершение ListenAndServe
+func httpServerShutdown(ctx context.Context, srv *http.Server) { 
+	
 	<-ctx.Done()
-	// time.Sleep(3*time.Second)
+	
 	if err := srv.Shutdown(ctx); err != nil {
 		// обработа ошибки остановки сервера
 		log.Printf("HTTP server Shutdown error: %v", err)
 	}
-	// закрытие управляющего канала установки
-	//close(idleConnsClosed)
-	//}()
+	
 }
