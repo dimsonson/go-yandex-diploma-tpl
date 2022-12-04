@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/rs/zerolog/log"
 )
 
@@ -25,7 +24,7 @@ type Worker struct {
 // конструктор экземпляра воркера
 func NewWorker(ctx context.Context, channel chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider) *Worker {
 	return &Worker{
-		ctx: ctx,
+		ctx:      ctx,
 		ID:       ID,
 		taskChan: channel,
 		quit:     make(chan bool),
@@ -60,11 +59,6 @@ func (wr *Worker) Stop() {
 // метод выполнения задачи для воркера
 func (wr *Worker) Job(ctx context.Context, task models.Task) {
 	for {
-		// опередяляем контекст с таймаутом
-		ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
-		// освобождаем ресурс
-		defer cancel()
-
 		// отпарвляем запрос на получения обновленных данных по заказу
 		rGet, err := http.Get(task.LinkUpd)
 		if err != nil {
@@ -101,15 +95,15 @@ func (wr *Worker) Job(ctx context.Context, task models.Task) {
 				return
 			}
 		}
-		// если приходит 429 код ответа, увеличиваем таймаут запросов на значение в Retry-After
+		// если приходит 429 код ответа, делаем паузу на значение в Retry-After
 		if rGet.StatusCode == http.StatusTooManyRequests {
 			timeout, err := strconv.Atoi(rGet.Header.Get("Retry-After"))
 			if err != nil {
 				log.Printf("error converting Retry-After to int:%s", err)
 				return
 			}
-			// увеличиваем паузу в соотвествии с Retry-After
-			wr.timeoutW = time.NewTicker(time.Duration(timeout) * 1000 * time.Millisecond)
+			// делаем паузу в соотвествии с Retry-After
+			time.Sleep(time.Duration(timeout) * 1000 * time.Millisecond)
 		}
 		// закрываем ресурс
 		defer rGet.Body.Close()
