@@ -71,11 +71,11 @@ func (p *Pool) AppendTask(login, orderNum string) {
 func (p *Pool) RunBackground() {
 	// запуск воркеров с каналами получвения задач
 	log.Print("starting Pool")
-	
+
 	for i := 1; i <= p.concurrency; i++ {
 		worker := NewWorker(p.ctx, p.collector, i, p.timeout, p.storage, p.wg)
 		p.Workers = append(p.Workers, worker)
-		//p.wg.Add(1)
+		p.wg.Add(1)
 		go worker.StartBackground()
 	}
 	// передача задач из очереди в каналы воркеров
@@ -84,7 +84,7 @@ func (p *Pool) RunBackground() {
 		// остановка пула
 		case <-p.ctx.Done():
 			log.Print("closing Pool")
-			//p.wg.Done()
+			p.wg.Done()
 			return
 		default:
 			if lenQ := p.TasksQ.Len(); lenQ > 0 {

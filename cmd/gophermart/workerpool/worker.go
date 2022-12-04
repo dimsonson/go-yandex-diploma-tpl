@@ -24,11 +24,11 @@ type Worker struct {
 }
 
 // конструктор экземпляра воркера
-func NewWorker(ctx context.Context, channel chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider, wg *sync.WaitGroup) *Worker {
+func NewWorker(ctx context.Context, taskChan chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider, wg *sync.WaitGroup) *Worker {
 	return &Worker{
 		ctx:      ctx,
 		ID:       ID,
-		taskChan: channel,
+		taskChan: taskChan,
 		quit:     make(chan bool),
 		timeoutW: timeout,
 		storage:  storage,
@@ -39,16 +39,18 @@ func NewWorker(ctx context.Context, channel chan models.Task, ID int, timeout *t
 // запуск воркера с выполнением задач по тикеру
 func (wr *Worker) StartBackground() {
 	log.Printf("starting Worker %d", wr.ID)
-	
 	for {
 		select {
 		case <-wr.timeoutW.C:
-			task := <-wr.taskChan
-			log.Printf("work of Worker %v : %v", wr.ID, task.LinkUpd)
-			wr.Job(wr.ctx, task)
+			if len(wr.taskChan) > 0 {
+				task := <-wr.taskChan
+				log.Printf("work of Worker %v : %v", wr.ID, task.LinkUpd)
+				wr.Job(wr.ctx, task)
+			}
+
 		case <-wr.ctx.Done(): // <-wr.quit:
 			log.Printf("closing Worker %d", wr.ID)
-			//wr.wg.Done()
+			wr.wg.Done()
 			return
 		}
 	}

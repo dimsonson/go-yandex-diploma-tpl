@@ -46,7 +46,7 @@ func main() {
 	// опередяляем контекст уведомления о сигнале прерывания
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	// освобождаем ресурс
-	// defer stop()
+	defer stop()
 	// создаем группы ожидания выполнения
 	var wg sync.WaitGroup
 	// создаем воркер пул апдейта статусов заказов
@@ -67,27 +67,18 @@ func main() {
 	log.Print("starting http server on: ", settings.ColorBlue, addr, settings.ColorReset)
 	// конфигурирование http сервера
 	srv := &http.Server{Addr: addr, Handler: r}
-	// канал остановки http сервера
-	//idleConnsClosed := make(chan struct{})
 	// запуск http сервера ожидающего остановку
 	go httpServerShutdown(ctx, srv) //, pool) //, idleConnsClosed)
 	// запуск пула воркеров
 	wg.Add(1)
 	go pool.RunBackground()
-	log.Print("ready to serve requests on " + addr)
-	// получение сигнала остановки сервера и пула
 	// запуск http сервера
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		// обработка ошибки запуска сервера
 		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
-	}
+	} 
+	wg.Wait()
 	log.Print("http server gracefully shutting down")
-
-	// <-idleConnsClosed
-	log.Print("before wg.Wait")
-	// wg.Wait()
-	time.Sleep(3*time.Second)
-	stop()
 }
 
 // парсинг флагов и валидация переменных окружения
@@ -140,9 +131,9 @@ func httpServerShutdown(ctx context.Context, srv *http.Server) { //, pool *worke
 	// сигнал получен, останавливаем воркеры
 	pool.Stop() */
 	// сигнал получен, останавливаем сервер
-	time.Sleep(3*time.Second)
+
 	<-ctx.Done()
-	time.Sleep(3*time.Second)
+	// time.Sleep(3*time.Second)
 	if err := srv.Shutdown(ctx); err != nil {
 		// обработа ошибки остановки сервера
 		log.Printf("HTTP server Shutdown error: %v", err)
