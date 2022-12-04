@@ -24,6 +24,7 @@ type Pool struct {
 	mu            sync.Mutex
 	storage       StorageProvider
 	calcSys       string
+	ctx           context.Context
 }
 
 // канал остановки Pool
@@ -38,8 +39,9 @@ func NewTask(LinkUpd string, Login string) *models.Task {
 }
 
 // NewPool инициализирует новый пул с заданными задачами и при заданном параллелизме
-func NewPool(tasks deque.Deque[models.Task], concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string) *Pool {
+func NewPool(ctx context.Context, tasks deque.Deque[models.Task], concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string) *Pool {
 	return &Pool{
+		ctx:         ctx,
 		TasksQ:      tasks,
 		concurrency: concurrency,
 		collector:   make(chan models.Task, settings.PipelineLenght),
@@ -50,12 +52,11 @@ func NewPool(tasks deque.Deque[models.Task], concurrency int, timeout *time.Tick
 }
 
 // AddTask добавляет таски в pool
-func (p *Pool) AppendTask(ctx context.Context, login, orderNum string) {
+func (p *Pool) AppendTask(login, orderNum string) {
 	// создаем ссылку для обноления статуса начислений по заказу
 	linkUpd := fmt.Sprintf("%s/api/orders/%s", p.calcSys, orderNum)
 	// создаем структуру для передачи в пул воркерам
 	task := models.Task{
-		Ctx:     ctx,
 		LinkUpd: linkUpd,
 		Login:   login,
 	}
@@ -69,7 +70,7 @@ func (p *Pool) RunBackground() {
 	// запуск воркеров с каналами получвения задач
 	log.Print("starting Pool")
 	for i := 1; i <= p.concurrency; i++ {
-		worker := NewWorker(p.collector, i, p.timeout, p.storage)
+		worker := NewWorker(p.ctx, p.collector, i, p.timeout, p.storage)
 		p.Workers = append(p.Workers, worker)
 		go worker.StartBackground()
 	}

@@ -1,7 +1,6 @@
 package models
 
 import (
-	"context"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -49,7 +48,6 @@ type OrderSatus struct {
 
 // задача для воркера работающего с внешним сервиом начислений баллов лояльности
 type Task struct {
-	Ctx     context.Context
 	LinkUpd string
-	Login   string
+	Login string
 }

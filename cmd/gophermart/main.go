@@ -42,8 +42,12 @@ func main() {
 	ticker := time.NewTicker(settings.RequestsTimeout)
 	// создаем очередь для задач воркер пула апдейта статусов заказов
 	queue := deque.New[models.Task]()
+	// опередяляем контекст с таймаутом
+	ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
+	// освобождаем ресурс
+	defer cancel()
 	// создаем воркер пул апдейта статусов заказов
-	pool := workerpool.NewPool(*queue, settings.WorkersQty, ticker, storage, calcSys)
+	pool := workerpool.NewPool(ctx, *queue, settings.WorkersQty, ticker, storage, calcSys)
 	// конструкторы интерфейса User
 	serviceUser := services.NewUserService(storage)
 	handlerUser := handlers.NewUserHandler(serviceUser)

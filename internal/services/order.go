@@ -18,7 +18,7 @@ type OrderStorageProvider interface {
 }
 
 type PoolProvider interface {
-	AppendTask(ctx context.Context, login, orderNum string)
+	AppendTask(login, orderNum string)
 }
 
 // структура конструктора бизнес логики Order
@@ -64,7 +64,7 @@ func (svc *OrderService) Load(ctx context.Context, login string, orderNum string
 	// освобождаем ресурс
 	defer rPost.Body.Close()
 	// отпарвляем запрос в пул
-	svc.pool.AppendTask(ctx, login, orderNum)
+	svc.pool.AppendTask(login, orderNum)
 	return err
 }
 

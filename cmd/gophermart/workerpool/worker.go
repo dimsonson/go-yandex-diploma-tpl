@@ -1,17 +1,20 @@
 package workerpool
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/rs/zerolog/log"
 )
 
 // структура воркера
 type Worker struct {
+	ctx      context.Context
 	ID       int
 	taskChan chan models.Task
 	quit     chan bool
@@ -20,8 +23,9 @@ type Worker struct {
 }
 
 // конструктор экземпляра воркера
-func NewWorker(channel chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider) *Worker {
+func NewWorker(ctx context.Context, channel chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider) *Worker {
 	return &Worker{
+		ctx: ctx,
 		ID:       ID,
 		taskChan: channel,
 		quit:     make(chan bool),
@@ -38,7 +42,7 @@ func (wr *Worker) StartBackground() {
 		case <-wr.timeoutW.C:
 			task := <-wr.taskChan
 			log.Printf("work of Worker %v : %v", wr.ID, task.LinkUpd)
-			wr.Job(task)
+			wr.Job(wr.ctx, task)
 		case <-wr.quit:
 			return
 		}
@@ -54,8 +58,13 @@ func (wr *Worker) Stop() {
 }
 
 // метод выполнения задачи для воркера
-func (wr *Worker) Job(task models.Task) {
+func (wr *Worker) Job(ctx context.Context, task models.Task) {
 	for {
+		// опередяляем контекст с таймаутом
+		ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
+		// освобождаем ресурс
+		defer cancel()
+
 		// отпарвляем запрос на получения обновленных данных по заказу
 		rGet, err := http.Get(task.LinkUpd)
 		if err != nil {
@@ -79,7 +88,7 @@ func (wr *Worker) Job(task models.Task) {
 				return
 			}
 			// обновляем статус ордера в хранилище
-			err = wr.storage.Update(task.Ctx, task.Login, dc)
+			err = wr.storage.Update(ctx, task.Login, dc)
 			if err != nil {
 				log.Printf("sr.storage.StorageNewOrderUpdate error :%s", err)
 				return
