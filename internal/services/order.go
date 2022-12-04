@@ -18,9 +18,7 @@ type OrderStorageProvider interface {
 }
 
 type PoolProvider interface {
-	RunBackground()
-	Stop()
-	AppendTask(models.Task)
+	AppendTask(login, orderNum string)
 }
 
 // структура конструктора бизнес логики Order
@@ -65,15 +63,8 @@ func (svc *OrderService) Load(ctx context.Context, login string, orderNum string
 	}
 	// освобождаем ресурс
 	defer rPost.Body.Close()
-	// создаем ссылку для обноления статуса начислений по заказу
-	linkUpd := fmt.Sprintf("%s/api/orders/%s", svc.CalcSys, orderNum)
-	// создаем структуру для передачи в пул воркерам
-	task := &models.Task{
-		LinkUpd: linkUpd,
-		Login:   login,
-	}
 	// отпарвляем запрос в пул
-	svc.pool.AppendTask(*task)
+	svc.pool.AppendTask(login, orderNum)
 	return err
 }
 

@@ -13,7 +13,6 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers/servicemock"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/shopspring/decimal"
@@ -60,9 +59,6 @@ func TestHandler_Status(t *testing.T) {
 	for _, tCase := range tests {
 		// запускаем каждый тест
 		t.Run(tCase.name, func(t *testing.T) {
-			// конфигурирование тестового сервера
-			rout := chi.NewRouter()
-			rout.Get(tCase.inputEndpoint, h.Status)
 			// конфигурирование запроса
 			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, nil)
 			// контекст логина
@@ -74,11 +70,10 @@ func TestHandler_Status(t *testing.T) {
 			w := httptest.NewRecorder()
 			w.Header().Set("Authorization", "Bearer "+tCase.inputLogin)
 			// запуск
-			rout.ServeHTTP(w, request)
+			h.Status(w, request)
 			// оценка результатов
 			assert.Equal(t, tCase.expectedStatusCode, w.Code)
 			assert.Equal(t, tCase.expectedHeaderContent1, w.Header().Get(tCase.expectedHeader1))
-
 		})
 	}
 }
@@ -138,9 +133,6 @@ func TestHandler_NewWithdrawal(t *testing.T) {
 	for _, tCase := range tests {
 		// запускаем каждый тест
 		t.Run(tCase.name, func(t *testing.T) {
-			// конфигурирование тестового сервера
-			rout := chi.NewRouter()
-			rout.Post(tCase.inputEndpoint, h.NewWithdrawal)
 			// конфигурирование запроса
 			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
 			// контекст логина
@@ -152,7 +144,7 @@ func TestHandler_NewWithdrawal(t *testing.T) {
 			w := httptest.NewRecorder()
 			w.Header().Set("Authorization", "Bearer "+tCase.inputLogin)
 			// запуск
-			rout.ServeHTTP(w, request)
+			h.NewWithdrawal(w, request)
 			// оценка результатов
 			assert.Equal(t, tCase.expectedStatusCode, w.Code)
 		})
@@ -222,9 +214,6 @@ func TestHandler_WithdrawalsList(t *testing.T) {
 	for _, tCase := range tests {
 		// запускаем каждый тест
 		t.Run(tCase.name, func(t *testing.T) {
-			// конфигурирование тестового сервера
-			rout := chi.NewRouter()
-			rout.Get(tCase.inputEndpoint, h.WithdrawalsList)
 			// конфигурирование запроса
 			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, nil)
 			// контекст логина
@@ -236,7 +225,7 @@ func TestHandler_WithdrawalsList(t *testing.T) {
 			w := httptest.NewRecorder()
 			w.Header().Set("Authorization", "Bearer "+tCase.inputLogin)
 			// запуск запроса
-			rout.ServeHTTP(w, request)
+			h.WithdrawalsList(w, request)
 			b, err := json.Marshal(tCase.expectedStruct)
 			if err != nil {
 				log.Printf("json.Marshal error: %v", err)

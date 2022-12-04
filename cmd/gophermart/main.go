@@ -43,7 +43,7 @@ func main() {
 	// создаем очередь для задач воркер пула апдейта статусов заказов
 	queue := deque.New[models.Task]()
 	// создаем воркер пул апдейта статусов заказов
-	pool := workerpool.NewPool(*queue, settings.WorkersQty, ticker, storage)
+	pool := workerpool.NewPool(*queue, settings.WorkersQty, ticker, storage, calcSys)
 	// конструкторы интерфейса User
 	serviceUser := services.NewUserService(storage)
 	handlerUser := handlers.NewUserHandler(serviceUser)

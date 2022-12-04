@@ -8,7 +8,6 @@ import (
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers/servicemock"
-	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,15 +63,12 @@ func TestHandler_Create(t *testing.T) {
 	for _, tCase := range tests {
 		// запускаем каждый тест
 		t.Run(tCase.name, func(t *testing.T) {
-			// конфигурирование запроса
-			rout := chi.NewRouter()
-			rout.Post("/api/user/register", h.Create)
 			// запрос
 			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
 			/// создание запроса
 			w := httptest.NewRecorder()
 			// запуск
-			rout.ServeHTTP(w, request)
+			h.Create(w, request)
 			// оценка результатов
 			assert.Equal(t, tCase.expectedStatusCode, w.Code)
 			if w.Code == http.StatusOK {
@@ -134,15 +130,12 @@ func TestHandler_CheckAuthorization(t *testing.T) {
 	for _, tCase := range tests {
 		// запускаем каждый тест
 		t.Run(tCase.name, func(t *testing.T) {
-			// конфигурирование тестового сервера
-			rout := chi.NewRouter()
-			rout.Post("/api/user/register", h.CheckAuthorization)
 			// конфигурирование запроса
 			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
 			// создание запроса
 			w := httptest.NewRecorder()
 			// запуск
-			rout.ServeHTTP(w, request)
+			h.CheckAuthorization(w, request)
 			// оценка результатов
 			assert.Equal(t, tCase.expectedStatusCode, w.Code)
 			if w.Code == http.StatusOK {

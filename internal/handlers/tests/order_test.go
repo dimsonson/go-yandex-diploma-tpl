@@ -8,7 +8,6 @@ import (
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers/servicemock"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/stretchr/testify/assert"
@@ -81,9 +80,6 @@ func TestHandler_Load(t *testing.T) {
 	for _, tCase := range tests {
 		// запускаем каждый тест
 		t.Run(tCase.name, func(t *testing.T) {
-			// конфигурирование тестового сервера
-			rout := chi.NewRouter()
-			rout.Post("/api/user/orders", h.Load)
 			// конфигурирование запроса
 			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, bytes.NewBufferString(tCase.inputBody))
 			// контекст логина
@@ -95,7 +91,7 @@ func TestHandler_Load(t *testing.T) {
 			w := httptest.NewRecorder()
 			w.Header().Set("Authorization", "Bearer "+tCase.inputLogin)
 			// запуск
-			rout.ServeHTTP(w, request)
+			h.Load(w, request)
 			// оценка результатов
 			assert.Equal(t, tCase.expectedStatusCode, w.Code)
 		})
@@ -142,9 +138,6 @@ func TestHandler_List(t *testing.T) {
 	for _, tCase := range tests {
 		// запускаем каждый тест
 		t.Run(tCase.name, func(t *testing.T) {
-			// конфигурирование тестового сервера
-			rout := chi.NewRouter()
-			rout.Get("/api/user/orders", h.List)
 			// конфигурирование запроса
 			request := httptest.NewRequest(tCase.inputMetod, tCase.inputEndpoint, nil)
 			// контекст логина
@@ -156,7 +149,7 @@ func TestHandler_List(t *testing.T) {
 			w := httptest.NewRecorder()
 			w.Header().Set("Authorization", "Bearer "+tCase.inputLogin)
 			// запуск
-			rout.ServeHTTP(w, request)
+			h.List(w, request)
 			// оценка результатов
 			assert.Equal(t, tCase.expectedStatusCode, w.Code)
 		})
