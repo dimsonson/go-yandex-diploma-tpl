@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -42,12 +43,14 @@ func main() {
 	ticker := time.NewTicker(settings.RequestsTimeout)
 	// создаем очередь для задач воркер пула апдейта статусов заказов
 	queue := deque.New[models.Task]()
-	// опередяляем контекст с таймаутом
-	ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
+	// опередяляем контекст уведомления о сигнале прерывания
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	// освобождаем ресурс
-	defer cancel()
+	// defer stop()
+	// создаем группы ожидания выполнения
+	var wg sync.WaitGroup
 	// создаем воркер пул апдейта статусов заказов
-	pool := workerpool.NewPool(ctx, *queue, settings.WorkersQty, ticker, storage, calcSys)
+	pool := workerpool.NewPool(ctx, *queue, settings.WorkersQty, ticker, storage, calcSys, &wg)
 	// конструкторы интерфейса User
 	serviceUser := services.NewUserService(storage)
 	handlerUser := handlers.NewUserHandler(serviceUser)
@@ -65,15 +68,26 @@ func main() {
 	// конфигурирование http сервера
 	srv := &http.Server{Addr: addr, Handler: r}
 	// канал остановки http сервера
-	idleConnsClosed := make(chan struct{})
+	//idleConnsClosed := make(chan struct{})
 	// запуск http сервера ожидающего остановку
-	go httpServerStart(srv, pool, idleConnsClosed)
+	go httpServerShutdown(ctx, srv) //, pool) //, idleConnsClosed)
 	// запуск пула воркеров
+	wg.Add(1)
 	go pool.RunBackground()
 	log.Print("ready to serve requests on " + addr)
 	// получение сигнала остановки сервера и пула
-	<-idleConnsClosed
-	log.Print("gracefully shutting down")
+	// запуск http сервера
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		// обработка ошибки запуска сервера
+		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
+	}
+	log.Print("http server gracefully shutting down")
+
+	// <-idleConnsClosed
+	log.Print("before wg.Wait")
+	// wg.Wait()
+	time.Sleep(3*time.Second)
+	stop()
 }
 
 // парсинг флагов и валидация переменных окружения
@@ -117,25 +131,23 @@ func newStrorageProvider(dlink string) (s *storage.StorageSQL) {
 }
 
 // запуск и gracefull завершение ListenAndServe
-func httpServerStart(srv *http.Server, pool *workerpool.Pool, idleConnsClosed chan struct{}) {
-	go func() {
-		// канал инциализирущего сигнала остановки сервера и пула воркеров
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
-		// сигнал получен, останавливаем воркеры
-		pool.Stop()
-		// сигнал получен, останавливаем сервер
-		if err := srv.Shutdown(context.Background()); err != nil {
-			// обработа ошибки остановки сервера
-			log.Printf("HTTP server Shutdown error: %v", err)
-		}
-		// закрытие управляющего канала установки
-		close(idleConnsClosed)
-	}()
-	// запуск http сервера
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		// обработка ошибки запуска сервера
-		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
+func httpServerShutdown(ctx context.Context, srv *http.Server) { //, pool *workerpool.Pool) { //, idleConnsClosed chan struct{}) {
+	//go func() {
+	// канал инциализирущего сигнала остановки сервера и пула воркеров
+	/* sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt)
+	<-sigint
+	// сигнал получен, останавливаем воркеры
+	pool.Stop() */
+	// сигнал получен, останавливаем сервер
+	time.Sleep(3*time.Second)
+	<-ctx.Done()
+	time.Sleep(3*time.Second)
+	if err := srv.Shutdown(ctx); err != nil {
+		// обработа ошибки остановки сервера
+		log.Printf("HTTP server Shutdown error: %v", err)
 	}
+	// закрытие управляющего канала установки
+	//close(idleConnsClosed)
+	//}()
 }

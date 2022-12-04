@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
@@ -19,10 +20,11 @@ type Worker struct {
 	quit     chan bool
 	timeoutW *time.Ticker
 	storage  StorageProvider
+	wg       *sync.WaitGroup
 }
 
 // конструктор экземпляра воркера
-func NewWorker(ctx context.Context, channel chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider) *Worker {
+func NewWorker(ctx context.Context, channel chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider, wg *sync.WaitGroup) *Worker {
 	return &Worker{
 		ctx:      ctx,
 		ID:       ID,
@@ -30,19 +32,23 @@ func NewWorker(ctx context.Context, channel chan models.Task, ID int, timeout *t
 		quit:     make(chan bool),
 		timeoutW: timeout,
 		storage:  storage,
+		wg:       wg,
 	}
 }
 
 // запуск воркера с выполнением задач по тикеру
 func (wr *Worker) StartBackground() {
 	log.Printf("starting Worker %d", wr.ID)
+	
 	for {
 		select {
 		case <-wr.timeoutW.C:
 			task := <-wr.taskChan
 			log.Printf("work of Worker %v : %v", wr.ID, task.LinkUpd)
 			wr.Job(wr.ctx, task)
-		case <-wr.quit:
+		case <-wr.ctx.Done(): // <-wr.quit:
+			log.Printf("closing Worker %d", wr.ID)
+			//wr.wg.Done()
 			return
 		}
 	}
