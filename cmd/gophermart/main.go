@@ -45,8 +45,6 @@ func main() {
 	queue := deque.New[models.Task]()
 	// опередяляем контекст уведомления о сигнале прерывания
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	// освобождаем ресурс
-	defer stop()
 	// создаем группы ожидания выполнения
 	var wg sync.WaitGroup
 	// создаем воркер пул апдейта статусов заказов
@@ -78,6 +76,7 @@ func main() {
 		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
 	} 
 	wg.Wait()
+	stop()
 	log.Print("http server gracefully shutdown")
 }
 
