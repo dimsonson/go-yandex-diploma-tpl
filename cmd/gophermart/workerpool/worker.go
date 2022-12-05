@@ -36,38 +36,36 @@ func NewWorker(ctx context.Context, taskChan chan models.Task, ID int, timeout *
 	}
 }
 
-// запуск воркера с выполнением задач по тикеру
+// запуск воркера с выполнением задач по тикеру для поддержаия RPS запросов
 func (wr *Worker) StartBackground() {
 	log.Printf("starting Worker %d", wr.ID)
 	for {
 		select {
+		// получаем сигнал тикера
 		case <-wr.timeoutW.C:
+			// если канал получения задач не пустой, получем из него задачу и обрабатываем
 			select {
 			case task := <-wr.taskChan:
 				log.Printf("work of Worker %v : %v", wr.ID, task.LinkUpd)
+				// запуск метода выполнения задачи
 				wr.Job(wr.ctx, task)
+				// если канал с задачами пустой - ничего не делаем
 			default:
 			}
+			// получаем сигнал оостановки
 		case <-wr.ctx.Done():
 			log.Printf("closing Worker %d", wr.ID)
+			// уменьшаем счетчик запущенных горутин
 			wr.wg.Done()
 			return
 		}
 	}
 }
 
-// остановка воркеров
-func (wr *Worker) Stop() {
-	log.Printf("closing Worker %d", wr.ID)
-	go func() {
-		wr.quit <- true
-	}()
-}
-
 // метод выполнения задачи для воркера
 func (wr *Worker) Job(ctx context.Context, task models.Task) {
 	for {
-		// отпарвляем запрос на получения обновленных данных по заказу
+		// отпарвляем запрос в внешний сервис на получения обновленных данных по заказу
 		rGet, err := http.Get(task.LinkUpd)
 		if err != nil {
 			log.Printf("gorutine http Get error :%s", err)

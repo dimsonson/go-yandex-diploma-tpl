@@ -28,9 +28,6 @@ type Pool struct {
 	wg            *sync.WaitGroup
 }
 
-// канал остановки Pool
-// var done = make(chan struct{})
-
 // конструктор задачи для воркера
 func NewTask(LinkUpd string, Login string) *models.Task {
 	return &models.Task{
@@ -53,60 +50,57 @@ func NewPool(ctx context.Context, tasks deque.Deque[models.Task], concurrency in
 	}
 }
 
-// AddTask добавляет таски в pool
+// добавляем задачи в pool
 func (p *Pool) AppendTask(login, orderNum string) {
 	// создаем ссылку для обноления статуса начислений по заказу
 	linkUpd := fmt.Sprintf("%s/api/orders/%s", p.calcSys, orderNum)
-	// создаем структуру для передачи в пул воркерам
+	// создаем структуру для передачи в очередь пула воркеров
 	task := models.Task{
 		LinkUpd: linkUpd,
 		Login:   login,
 	}
+	// используем мьютексы для многопоточной работы с очередью
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	// добавлем задачу в конец очереди
 	p.TasksQ.PushBack(task)
 }
 
-// RunBackground запускает pool в фоне
+// запускаем пул воркеров
 func (p *Pool) RunBackground() {
-	// запуск воркеров с каналами получвения задач
 	log.Print("starting Pool")
-
+	// запуск воркеров с каналами получения задач
 	for i := 1; i <= p.concurrency; i++ {
+		// констуруируем воркер
 		worker := NewWorker(p.ctx, p.collector, i, p.timeout, p.storage, p.wg)
+		// добавляем воркер в слайс воркеров
 		p.Workers = append(p.Workers, worker)
+		// увеличиваем счетчик запущенных горутин
 		p.wg.Add(1)
+		// запускаем воркер
 		go worker.StartBackground()
 	}
 	// передача задач из очереди в каналы воркеров
 	for {
 		select {
-		// остановка пула
+		// остановка пула по сигналу контекста
 		case <-p.ctx.Done():
 			log.Print("closing Pool")
+			// уменьшем счетчик запущенных горутин
 			p.wg.Done()
 			return
 		default:
+			// если очередь не пустая, берем из нее задачу и отправляем в канал воркеров
+			p.mu.Lock()
 			if lenQ := p.TasksQ.Len(); lenQ > 0 {
-				p.mu.Lock()
 				p.collector <- p.TasksQ.PopFront()
-				p.mu.Unlock()
 			}
+			p.mu.Unlock()
 		}
-	}
-}
-
-// Stop останавливает запущенных в фоне воркеров
-func (p *Pool) Stop() {
-	//defer close(done)
-	for i := range p.Workers {
-		p.Workers[i].Stop()
 	}
 }
 
 // интерфейс доступа к хранилищу
 type StorageProvider interface {
-	Load(ctx context.Context, login string, orderNum string) (err error)
-	List(ctx context.Context, login string) (ec []models.OrdersList, err error)
 	Update(ctx context.Context, login string, dc models.OrderSatus) (err error)
 }

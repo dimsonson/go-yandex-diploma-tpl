@@ -84,6 +84,7 @@ func (ms *StorageSQL) CheckAuthorization(ctx context.Context, login string, pass
 		log.Printf("select StorageAuthorizationCheck SQL request scan error: %s", err)
 		return err
 	}
+	// сравнение паролей из базы данных и полученного
 	if passwDB != passwHex {
 		err = errors.New("login or password not exist")
 		log.Printf("select StorageAuthorizationCheck SQL: %s", err)
