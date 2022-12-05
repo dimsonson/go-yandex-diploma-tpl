@@ -42,13 +42,13 @@ func (wr *Worker) StartBackground() {
 	for {
 		select {
 		case <-wr.timeoutW.C:
-			if len(wr.taskChan) > 0 {
-				task := <-wr.taskChan
+			select {
+			case task := <-wr.taskChan:
 				log.Printf("work of Worker %v : %v", wr.ID, task.LinkUpd)
 				wr.Job(wr.ctx, task)
+			default:
 			}
-
-		case <-wr.ctx.Done(): // <-wr.quit:
+		case <-wr.ctx.Done():
 			log.Printf("closing Worker %d", wr.ID)
 			wr.wg.Done()
 			return
