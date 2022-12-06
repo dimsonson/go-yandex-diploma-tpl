@@ -84,13 +84,13 @@ func (wr *Worker) Job(ctx context.Context, task models.Task) {
 			dc := models.OrderSatus{}
 			err = json.NewDecoder(rGet.Body).Decode(&dc)
 			if err != nil {
-				log.Printf("unmarshal error ServiceNewOrderLoad gorutine: %s", err)
+				log.Printf("unmarshal error Worker Job gorutine: %s", err)
 				return
 			}
 			// обновляем статус ордера в хранилище
 			err = wr.storage.Update(ctx, task.Login, dc)
 			if err != nil {
-				log.Printf("sr.storage.StorageNewOrderUpdate error :%s", err)
+				log.Printf("storage.Update Worker Job error :%s", err)
 				return
 			}
 			// логируем обновление в хранилище
