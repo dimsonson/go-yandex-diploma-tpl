@@ -23,7 +23,7 @@ func (ms *StorageSQL) Create(ctx context.Context, login string, passwHex string)
 		q := `INSERT INTO users VALUES ($1, $2)`
 		// записываем в хранилице login, passwHex
 		_, err = tx.Exec(q, login, passwHex)
-		// если login есть в хранилище, возвращаем соответствующую ошибку
+		// если login есть в хранилище, возвращаем соответствующую ошибку "login exist"
 		var pgErr *pgconn.PgError
 		switch {
 		case errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation:
@@ -47,7 +47,7 @@ func (ms *StorageSQL) Create(ctx context.Context, login string, passwHex string)
 		q := `INSERT INTO balance VALUES ($1, 0, 0);`
 		// записываем в хранилице login, passwHex
 		_, err = tx.Exec(q, login)
-		// если login есть в хранилище, возвращаем соответствующую ошибку
+		// если login есть в хранилище, возвращаем соответствующую ошибку "login exist"
 		var pgErr *pgconn.PgError
 		switch {
 		case errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation:

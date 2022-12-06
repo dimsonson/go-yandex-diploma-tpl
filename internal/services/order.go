@@ -63,7 +63,7 @@ func (svc *OrderService) Load(ctx context.Context, login string, orderNum string
 	}
 	// освобождаем ресурс
 	defer rPost.Body.Close()
-	// отпарвляем запрос в пул
+	// отпарвляем запрос в пул воркеров для обработки
 	svc.pool.AppendTask(login, orderNum)
 	return err
 }

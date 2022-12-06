@@ -55,7 +55,7 @@ func (handler BalanceHandler) Status(w http.ResponseWriter, r *http.Request) {
 	}
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
-	// получаем структуру с суммой текущего баланса и суммой списаний и ошибку
+	// отпарвляем запрос серсис и получаем структуру с суммой текущего баланса и суммой списаний и ошибку
 	ec, err := handler.service.Status(ctx, login)
 	// 200 - при ошибке nil, 500 - при иных ошибках сервиса
 	switch {
@@ -141,7 +141,7 @@ func (handler BalanceHandler) WithdrawalsList(w http.ResponseWriter, r *http.Req
 	}
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
-	// получаем слайс структур и ошибку
+	// отпаряляем запрос в серсис, получаем слайс структур списаний и ошибку
 	ec, err := handler.service.WithdrawalsList(ctx, login)
 	// 200 - при ошибке nil, кодирование, 500 - при иных ошибках сервиса, 204 - если получена ошибка "no records"
 	switch {
