@@ -1,3 +1,4 @@
+// роутер запросов по эндпойнтам и обработчикам с подключением middleware 
 package httprouter
 
 import (

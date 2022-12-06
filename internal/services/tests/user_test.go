@@ -1,3 +1,4 @@
+// тесты слоя сервисов
 package service__test
 
 import (

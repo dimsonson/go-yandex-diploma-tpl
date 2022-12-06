@@ -1,3 +1,4 @@
+// пакет хранилища PostgreSQL
 package storage
 
 import (

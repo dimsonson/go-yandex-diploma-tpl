@@ -1,3 +1,4 @@
+// настройки приложения
 package settings
 
 import (

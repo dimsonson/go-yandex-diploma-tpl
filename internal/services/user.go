@@ -1,3 +1,4 @@
+// пакет серсисов бизнес-логики
 package services
 
 import (

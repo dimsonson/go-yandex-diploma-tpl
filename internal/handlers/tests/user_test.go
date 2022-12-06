@@ -1,3 +1,4 @@
+// тесты для обработчиков запросов
 package handlers__test
 
 import (

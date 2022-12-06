@@ -1,3 +1,4 @@
+// пакет обработчиков запросов
 package handlers
 
 import (
