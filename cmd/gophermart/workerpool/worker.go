@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// структура воркера
+// Worker - структура воркера
 type Worker struct {
 	ctx      context.Context
 	ID       int
@@ -23,7 +23,7 @@ type Worker struct {
 	wg       *sync.WaitGroup
 }
 
-// конструктор экземпляра воркера
+// NewWorker - конструктор экземпляра воркера
 func NewWorker(ctx context.Context, taskChan chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider, wg *sync.WaitGroup) *Worker {
 	return &Worker{
 		ctx:      ctx,
@@ -36,7 +36,7 @@ func NewWorker(ctx context.Context, taskChan chan models.Task, ID int, timeout *
 	}
 }
 
-// запуск воркера с выполнением задач по тикеру для поддержаия RPS запросов
+// StartBackground запускает воркер с выполнением задач по тикеру для поддержаия RPM запросов
 func (wr *Worker) StartBackground() {
 	log.Printf("starting Worker %d", wr.ID)
 	for {
@@ -62,7 +62,7 @@ func (wr *Worker) StartBackground() {
 	}
 }
 
-// метод выполнения задачи для воркера
+// Job - метод выполнения задачи для воркера
 func (wr *Worker) Job(ctx context.Context, task models.Task) {
 	for {
 		// отпарвляем запрос в внешний сервис на получения обновленных данных по заказу

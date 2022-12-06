@@ -29,7 +29,7 @@ type Pool struct {
 	wg            *sync.WaitGroup
 }
 
-// конструктор задачи для воркера
+// NewTask - конструктор структуры задач для воркера
 func NewTask(LinkUpd string, Login string) *models.Task {
 	return &models.Task{
 		LinkUpd: LinkUpd,
@@ -51,7 +51,7 @@ func NewPool(ctx context.Context, tasks deque.Deque[models.Task], concurrency in
 	}
 }
 
-// добавляем задачи в pool
+// AppendTask добавляет задачи в pool
 func (p *Pool) AppendTask(login, orderNum string) {
 	// создаем ссылку для обноления статуса начислений по заказу
 	linkUpd := fmt.Sprintf("%s/api/orders/%s", p.calcSys, orderNum)
@@ -67,7 +67,7 @@ func (p *Pool) AppendTask(login, orderNum string) {
 	p.TasksQ.PushBack(task)
 }
 
-// запускаем пул воркеров
+// RunBackground запускает пул воркеров
 func (p *Pool) RunBackground() {
 	log.Print("starting Pool")
 	// запуск воркеров с каналами получения задач
@@ -101,7 +101,7 @@ func (p *Pool) RunBackground() {
 	}
 }
 
-// интерфейс доступа к хранилищу
+// StorageProvider интерфейс доступа к хранилищу для методов пула воркеров
 type StorageProvider interface {
 	Update(ctx context.Context, login string, dc models.OrderSatus) (err error)
 }

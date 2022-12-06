@@ -89,7 +89,7 @@ func main() {
 	log.Print("http server gracefully shutdown")
 }
 
-// парсинг флагов и валидация переменных окружения
+// flagsVars парсит флаги и валидирует переменные окружения
 func flagsVars() (dlink string, calcSys string, addr string) {
 	// описываем флаги
 	addrFlag := flag.String("a", settings.DefServAddr, "HTTP Server address")
@@ -118,7 +118,7 @@ func flagsVars() (dlink string, calcSys string, addr string) {
 	return dlink, calcSys, addr
 }
 
-// создание структуры хранилища
+// newStrorageProvider создает структуру хранилища
 func newStrorageProvider(dlink string) (s *storage.StorageSQL) {
 	// проверяем если переменная SQL url не пустая, логгируем
 	if dlink == "" {
@@ -130,7 +130,7 @@ func newStrorageProvider(dlink string) (s *storage.StorageSQL) {
 	return s
 }
 
-// gracefull shutdown для ListenAndServe
+// httpServerShutdown реализует gracefull shutdown для ListenAndServe
 func httpServerShutdown(ctx context.Context, wg *sync.WaitGroup, srv *http.Server) {
 	// получаем сигнал о завершении приложения
 	<-ctx.Done()
