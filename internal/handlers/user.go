@@ -57,7 +57,7 @@ func (handler UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	default:
 		// создаем токен
 		claims := map[string]interface{}{"login": dc.Login}
-		jwtauth.SetExpiryIn(claims, settings.TokenLifeTime)
+		jwtauth.SetExpiryIn(claims, settings.TokenTTL)
 		_, tokenString, err := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
 		if err != nil {
 			log.Printf("tokenAuth.Encode error HandlerCreate: %s", err)

@@ -35,7 +35,7 @@ const (
 var TokenAuth *jwtauth.JWTAuth = jwtauth.New(string(jwa.HS256), []byte(SignKey), nil)
 
 // время жизни токена
-var TokenLifeTime = 30 * time.Minute
+var TokenTTL = 30 * time.Minute
 
 // начальный таймаут для горутины запросов к сервису расчета баллов
 var RequestsTimeout = 800 * time.Millisecond
