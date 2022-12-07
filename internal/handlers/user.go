@@ -96,7 +96,7 @@ func (handler UserHandler) CheckAuthorization(w http.ResponseWriter, r *http.Req
 	default:
 		// создаем токен
 		claims := map[string]interface{}{"login": dc.Login}
-		jwtauth.SetExpiryIn(claims, settings.TokenLifeTime)
+		jwtauth.SetExpiryIn(claims, settings.TokenTTL)
 		_, tokenString, err := settings.TokenAuth.Encode(claims)
 		if err != nil {
 			log.Printf("tokenAuth.Encode error HandlerCheckAuthorization: %s", err)
