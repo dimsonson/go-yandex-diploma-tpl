@@ -14,30 +14,30 @@ import (
 
 // Worker - структура воркера
 type Worker struct {
-	ctx      context.Context
-	ID       int
-	taskChan chan models.Task
-	quit     chan bool
-	timeoutW *time.Ticker
-	storage  StorageProvider
-	wg       *sync.WaitGroup
+	ID          int
+	taskChan    chan models.Task
+	quit        chan bool
+	timeoutW    *time.Ticker
+	storage     StorageProvider
+	wg          *sync.WaitGroup
+	httprequest HttpRequestProvider
 }
 
 // NewWorker - конструктор экземпляра воркера
-func NewWorker(ctx context.Context, taskChan chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider, wg *sync.WaitGroup) *Worker {
+func NewWorker(taskChan chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider, wg *sync.WaitGroup, httprequest HttpRequestProvider) *Worker {
 	return &Worker{
-		ctx:      ctx,
-		ID:       ID,
-		taskChan: taskChan,
-		quit:     make(chan bool),
-		timeoutW: timeout,
-		storage:  storage,
-		wg:       wg,
+		ID:          ID,
+		taskChan:    taskChan,
+		quit:        make(chan bool),
+		timeoutW:    timeout,
+		storage:     storage,
+		wg:          wg,
+		httprequest: httprequest,
 	}
 }
 
 // StartBackground запускает воркер с выполнением задач по тикеру для поддержаия RPM запросов
-func (wr *Worker) StartBackground() {
+func (wr *Worker) StartBackground(ctx context.Context) {
 	log.Printf("starting Worker %d", wr.ID)
 	for {
 		select {
@@ -46,14 +46,14 @@ func (wr *Worker) StartBackground() {
 			// если канал получения задач не пустой, получем из него задачу и обрабатываем
 			select {
 			case task := <-wr.taskChan:
-				log.Printf("work of Worker %v : %v", wr.ID, task.LinkUpd)
+				log.Printf("work of Worker %v : %v", wr.ID, task.OrderNum)
 				// запуск метода выполнения задачи
-				wr.Job(wr.ctx, task)
+				wr.Job(ctx, task)
 				// если канал с задачами пустой - ничего не делаем
 			default:
 			}
 			// получаем сигнал оостановки
-		case <-wr.ctx.Done():
+		case <-ctx.Done():
 			log.Printf("closing Worker %d", wr.ID)
 			// уменьшаем счетчик запущенных горутин
 			wr.wg.Done()
@@ -66,18 +66,18 @@ func (wr *Worker) StartBackground() {
 func (wr *Worker) Job(ctx context.Context, task models.Task) {
 	for {
 		// отпарвляем запрос в внешний сервис на получения обновленных данных по заказу
-		rGet, err := http.Get(task.LinkUpd)
+		rGet, err := wr.httprequest.RequestGet(task.OrderNum)
 		if err != nil {
 			log.Printf("gorutine http Get error :%s", err)
 			return
 		}
 		// завершаем задачу, если ордера нет в системе расчета баллов лояльности или заказ уже рассчитан
-		if rGet.StatusCode == http.StatusNoContent || rGet.StatusCode == http.StatusConflict {
+		if rGet.StatusCode == http.StatusNoContent || rGet.StatusCode == http.StatusNotFound || rGet.StatusCode == http.StatusConflict {
 			log.Printf("status code %v recieved from extenal calculation service", rGet.StatusCode)
 			return
 		}
-		// логгируем полученный статус заказа
-		log.Printf("status code %v recieved from extenal calculation service", rGet.StatusCode)
+		// логгируем полученный статус код ответа внешнего сервиса
+		log.Printf("http status code %v recieved from extenal calculation service", rGet.StatusCode)
 		// выполняем дальше, если 200 код ответа
 		if rGet.StatusCode == http.StatusOK {
 			// десериализация тела ответа системы
@@ -109,7 +109,7 @@ func (wr *Worker) Job(ctx context.Context, task models.Task) {
 				return
 			}
 			// делаем паузу в соотвествии с Retry-After
-			<-time.After(time.Duration(timeout) * 1000 * time.Millisecond)
+			<-time.After(time.Duration(timeout) * time.Second)
 		}
 		// закрываем ресурс
 		defer rGet.Body.Close()

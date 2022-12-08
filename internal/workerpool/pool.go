@@ -3,7 +3,7 @@ package workerpool
 
 import (
 	"context"
-	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -25,22 +25,21 @@ type Pool struct {
 	mu            sync.Mutex
 	storage       StorageProvider
 	calcSys       string
-	ctx           context.Context
 	wg            *sync.WaitGroup
+	httprequest   HttpRequestProvider
 }
 
 // NewTask - конструктор структуры задач для воркера
-func NewTask(LinkUpd string, Login string) *models.Task {
+func NewTask(orderNum string, Login string) *models.Task {
 	return &models.Task{
-		LinkUpd: LinkUpd,
-		Login:   Login,
+		OrderNum: orderNum,
+		Login:    Login,
 	}
 }
 
 // NewPool инициализирует новый пул с заданными задачами и при заданном параллелизме
-func NewPool(ctx context.Context, tasks deque.Deque[models.Task], concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string, wg *sync.WaitGroup) *Pool {
+func NewPool(tasks deque.Deque[models.Task], concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string, wg *sync.WaitGroup, httprequest HttpRequestProvider) *Pool {
 	return &Pool{
-		ctx:         ctx,
 		TasksQ:      tasks,
 		concurrency: concurrency,
 		collector:   make(chan models.Task, settings.PipelineLenght),
@@ -48,17 +47,18 @@ func NewPool(ctx context.Context, tasks deque.Deque[models.Task], concurrency in
 		storage:     storage,
 		calcSys:     calcSys,
 		wg:          wg,
+		httprequest: httprequest,
 	}
 }
 
 // AppendTask добавляет задачи в pool
 func (p *Pool) AppendTask(login, orderNum string) {
 	// создаем ссылку для обноления статуса начислений по заказу
-	linkUpd := fmt.Sprintf("%s/api/orders/%s", p.calcSys, orderNum)
+	//linkUpd := fmt.Sprintf("%s/api/orders/%s", p.calcSys, orderNum)
 	// создаем структуру для передачи в очередь пула воркеров
 	task := models.Task{
-		LinkUpd: linkUpd,
-		Login:   login,
+		OrderNum: orderNum,
+		Login:    login,
 	}
 	// используем мьютексы для многопоточной работы с очередью
 	p.mu.Lock()
@@ -68,24 +68,24 @@ func (p *Pool) AppendTask(login, orderNum string) {
 }
 
 // RunBackground запускает пул воркеров
-func (p *Pool) RunBackground() {
+func (p *Pool) RunBackground(ctx context.Context) {
 	log.Print("starting Pool")
 	// запуск воркеров с каналами получения задач
 	for i := 1; i <= p.concurrency; i++ {
 		// констуруируем воркер
-		worker := NewWorker(p.ctx, p.collector, i, p.timeout, p.storage, p.wg)
+		worker := NewWorker(p.collector, i, p.timeout, p.storage, p.wg, p.httprequest)
 		// добавляем воркер в слайс воркеров
 		p.Workers = append(p.Workers, worker)
 		// увеличиваем счетчик запущенных горутин
 		p.wg.Add(1)
 		// запускаем воркер
-		go worker.StartBackground()
+		go worker.StartBackground(ctx)
 	}
 	// передача задач из очереди в каналы воркеров
 	for {
 		select {
 		// остановка пула по сигналу контекста
-		case <-p.ctx.Done():
+		case <-ctx.Done():
 			log.Print("closing Pool")
 			// уменьшем счетчик запущенных горутин
 			p.wg.Done()
@@ -104,4 +104,8 @@ func (p *Pool) RunBackground() {
 // StorageProvider интерфейс доступа к хранилищу для методов пула воркеров
 type StorageProvider interface {
 	Update(ctx context.Context, login string, dc models.OrderSatus) (err error)
+}
+
+type HttpRequestProvider interface {
+	RequestGet(url string) (rsp *http.Response, err error)
 }

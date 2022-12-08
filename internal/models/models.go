@@ -49,6 +49,6 @@ type OrderSatus struct {
 
 // задача для воркера работающего с внешним сервиом начислений баллов лояльности
 type Task struct {
-	LinkUpd string
-	Login string
+	OrderNum string
+	Login    string
 }

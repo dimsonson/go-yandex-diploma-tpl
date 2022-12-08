@@ -4,7 +4,9 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"sync"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/httprequest"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/httprouter"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
@@ -22,11 +25,11 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/shopspring/decimal"
 
-	"github.com/dimsonson/go-yandex-diploma-tpl/cmd/gophermart/workerpool"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/workerpool"
 )
 
 func init() {
-	// настройка обработки денежных единиц  
+	// настройка обработки денежных единиц
 	decimal.MarshalJSONWithoutQuotes = true
 	decimal.DivisionPrecision = 2
 	decimal.ExpMaxIterations = 1000
@@ -38,10 +41,19 @@ func init() {
 func main() {
 	// получаем переменные из флагов
 	dlink, calcSys, addr := flagsVars()
+	// создаем url для взаимодействия с внешней системой рассчета баллов
+	BaseUrl, err := url.Parse(calcSys)
+	if err != nil {
+		log.Print("base url parsing error: ", settings.ColorRed, err, settings.ColorReset)
+		return
+	}
+	BaseUrl.Path = "/api/orders"
+	fmt.Println("BaseUrl", BaseUrl)
 	// инициализируем конструкторы
 	// конструкторы хранилища
 	storage := newStrorageProvider(dlink)
 	defer storage.ConnectionClose()
+	httpReq := httprequest.NewHTTPRequst(BaseUrl)
 	// создаем тикер для обработки задач из очереди
 	ticker := time.NewTicker(settings.RequestsTimeout)
 	// создаем очередь для задач воркер пула апдейта статусов заказов
@@ -51,12 +63,12 @@ func main() {
 	// создаем группу синхранизации выполнения горутин
 	var wg sync.WaitGroup
 	// создаем воркер пул для обработки задач очереди
-	pool := workerpool.NewPool(ctx, *queue, settings.WorkersQty, ticker, storage, calcSys, &wg)
+	pool := workerpool.NewPool(*queue, settings.WorkersQty, ticker, storage, calcSys, &wg, httpReq)
 	// конструкторы структур User
 	serviceUser := services.NewUserService(storage)
 	handlerUser := handlers.NewUserHandler(serviceUser)
 	//конструкторы структур Order
-	serviceOrder := services.NewOrderService(storage, calcSys, pool)
+	serviceOrder := services.NewOrderService(storage, pool, httpReq)
 	handlerOrder := handlers.NewOrderHandler(serviceOrder)
 	// конструкторы структур Balance
 	serviceBalance := services.NewBalanceService(storage)
@@ -75,16 +87,16 @@ func main() {
 	// добавляем счетчик горутины
 	wg.Add(1)
 	// запуск горутины пула воркеров
-	go pool.RunBackground()
+	go pool.RunBackground(ctx)
 	// запуск http сервера
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		// обработка ошибки запуска сервера
 		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
 	}
-	// ожидаем выполнение горутин
-	wg.Wait()
 	// остановка всех сущностей, куда передан контекст по прерыванию
 	stop()
+	// ожидаем выполнение горутин
+	wg.Wait()
 	// логирование закрытия сервера без ошибок
 	log.Print("http server gracefully shutdown")
 }
