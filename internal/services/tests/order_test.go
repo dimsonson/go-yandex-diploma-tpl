@@ -34,7 +34,7 @@ func TestHandler_Load(t *testing.T) {
 	}
 
 	s := &storagemock.Order{}
-	svc := services.NewOrderService(s, "", nil)
+	svc := services.NewOrderService(s, nil, nil)
 
 	for _, tCase := range tests {
 		// запускаем каждый тест
@@ -110,7 +110,7 @@ func TestHandler_List(t *testing.T) {
 	}
 
 	s := &storagemock.Order{}
-	svc := services.NewOrderService(s, "", nil)
+	svc := services.NewOrderService(s, nil, nil)
 
 	for _, tCase := range tests {
 		// запускаем каждый тест
