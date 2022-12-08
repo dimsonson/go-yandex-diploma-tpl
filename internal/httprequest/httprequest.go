@@ -47,7 +47,7 @@ func (cl *HTTPRequest) RequestGet(orderNum string) (rsp *http.Response, err erro
 	// создаем линк обновления статуса заказов в внешнем сервисе
 	linkUpd := fmt.Sprintf("%s/%s", cl.BaseURL.String(), orderNum)
 	// делаем запрос во внешний сервис
-	rsp, err = http.Get(linkUpd)
+	rsp, err = cl.httpClient.Get(linkUpd)
 	if err != nil {
 		log.Printf("remoute service error: %s", err)
 	}
