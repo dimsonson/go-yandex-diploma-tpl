@@ -43,11 +43,12 @@ func NewOrderService(orderStorage OrderStorageProvider, pool PoolProvider, httpr
 // сервис загрузки пользователем в систему начисления баллов номера нового заказа для расчёта
 func (svc *OrderService) Load(ctx context.Context, login string, orderNum string) (err error) {
 	// проверка up and running внешнего сервиса
-	_, err = svc.httprequest.RequestGet("")
+	r, err := svc.httprequest.RequestGet("")
 	if err != nil {
 		log.Printf("remoute service request error (from OrderService Load): %s", err)
 		return err
 	}
+	r.Body.Close()
 	// запись нового заказа в хранилище
 	err = svc.storage.Load(ctx, login, orderNum)
 	if err != nil {
