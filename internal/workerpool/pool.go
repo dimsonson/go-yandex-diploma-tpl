@@ -11,13 +11,12 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 
-	//"github.com/gammazero/deque"
 	"github.com/rs/zerolog/log"
 )
 
 // структура пула воркеров
 type Pool struct {
-	TasksQ        *list.List // deque.Deque[models.Task]
+	TasksQ        *list.List
 	Workers       []*Worker
 	concurrency   int
 	collector     chan models.Task
@@ -31,7 +30,6 @@ type Pool struct {
 	httprequest   HTTPRequestProvider
 }
 
-
 // NewTask - конструктор структуры задач для воркера
 func NewTask(orderNum string, Login string) *models.Task {
 	return &models.Task{
@@ -43,7 +41,7 @@ func NewTask(orderNum string, Login string) *models.Task {
 // NewPool инициализирует новый пул с заданными задачами и при заданном параллелизме
 func NewPool(tasks *list.List /*deque.Deque[models.Task]*/, concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string, wg *sync.WaitGroup, httprequest HTTPRequestProvider) *Pool {
 	return &Pool{
-		TasksQ:      tasks, //list.New(),
+		TasksQ:      tasks,
 		concurrency: concurrency,
 		collector:   make(chan models.Task, settings.PipelineLenght),
 		timeout:     timeout,
@@ -56,7 +54,6 @@ func NewPool(tasks *list.List /*deque.Deque[models.Task]*/, concurrency int, tim
 
 // AppendTask добавляет задачи в pool
 func (p *Pool) AppendTask(login, orderNum string) {
-	// TaskQ:= list.New()
 	// создаем структуру для передачи в очередь пула воркеров
 	task := models.Task{
 		OrderNum: orderNum,
@@ -98,9 +95,6 @@ func (p *Pool) RunBackground(ctx context.Context) {
 			if lenQ := p.TasksQ.Len(); lenQ > 0 {
 				// удалем элемент из очереди с получением его значения и приведением его к типу models.Task с делаьнейшей передачей в канал
 				p.collector <- p.TasksQ.Remove(p.TasksQ.Front()).(models.Task)
-				//f := p.TasksQ.Front() //.Value.(models.Task)
-				//element := p.TasksQ.Remove(p.TasksQ.Front()).(models.Task)
-				//element
 			}
 			p.mu.Unlock()
 		}

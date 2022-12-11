@@ -54,7 +54,6 @@ func main() {
 	// создаем тикер для обработки задач из очереди
 	ticker := time.NewTicker(settings.RequestsTimeout)
 	// создаем очередь для задач воркер пула апдейта статусов заказов
-	//queue := deque.New[models.Task]()
 	queue := list.New()
 	// опередяляем контекст уведомления о сигнале прерывания
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
