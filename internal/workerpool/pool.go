@@ -28,7 +28,7 @@ type Pool struct {
 	storage       StorageProvider
 	calcSys       string
 	wg            *sync.WaitGroup
-	httprequest   HttpRequestProvider
+	httprequest   HTTPRequestProvider
 }
 
 
@@ -41,7 +41,7 @@ func NewTask(orderNum string, Login string) *models.Task {
 }
 
 // NewPool инициализирует новый пул с заданными задачами и при заданном параллелизме
-func NewPool(tasks *list.List /*deque.Deque[models.Task]*/, concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string, wg *sync.WaitGroup, httprequest HttpRequestProvider) *Pool {
+func NewPool(tasks *list.List /*deque.Deque[models.Task]*/, concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string, wg *sync.WaitGroup, httprequest HTTPRequestProvider) *Pool {
 	return &Pool{
 		TasksQ:      tasks, //list.New(),
 		concurrency: concurrency,
@@ -112,6 +112,6 @@ type StorageProvider interface {
 	Update(ctx context.Context, login string, dc models.OrderSatus) (err error)
 }
 
-type HttpRequestProvider interface {
+type HTTPRequestProvider interface {
 	RequestGet(url string) (rsp *http.Response, err error)
 }

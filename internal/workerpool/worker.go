@@ -20,11 +20,11 @@ type Worker struct {
 	timeoutW    *time.Ticker
 	storage     StorageProvider
 	wg          *sync.WaitGroup
-	httprequest HttpRequestProvider
+	httprequest HTTPRequestProvider
 }
 
 // NewWorker - конструктор экземпляра воркера
-func NewWorker(taskChan chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider, wg *sync.WaitGroup, httprequest HttpRequestProvider) *Worker {
+func NewWorker(taskChan chan models.Task, ID int, timeout *time.Ticker, storage StorageProvider, wg *sync.WaitGroup, httprequest HTTPRequestProvider) *Worker {
 	return &Worker{
 		ID:          ID,
 		taskChan:    taskChan,

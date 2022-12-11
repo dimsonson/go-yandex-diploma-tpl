@@ -40,17 +40,17 @@ func main() {
 	// получаем переменные из флагов
 	dlink, calcSys, addr := flagsVars()
 	// создаем url для взаимодействия с внешней системой рассчета баллов
-	BaseUrl, err := url.Parse(calcSys)
+	BaseURL, err := url.Parse(calcSys)
 	if err != nil {
 		log.Print("base url parsing error: ", settings.ColorRed, err, settings.ColorReset)
 		return
 	}
-	BaseUrl.Path = "/api/orders"
+	BaseURL.Path = "/api/orders"
 	// инициализируем конструкторы
 	// конструкторы хранилища
 	storage := newStrorageProvider(dlink)
 	defer storage.ConnectionClose()
-	httpReq := httprequest.NewHTTPRequst(BaseUrl)
+	httpReq := httprequest.NewHTTPRequst(BaseURL)
 	// создаем тикер для обработки задач из очереди
 	ticker := time.NewTicker(settings.RequestsTimeout)
 	// создаем очередь для задач воркер пула апдейта статусов заказов
