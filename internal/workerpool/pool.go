@@ -60,6 +60,7 @@ func (p *Pool) AppendTask(login, orderNum string) {
 		Login:    login,
 	}
 	// используем мьютексы для многопоточной работы с очередью
+	// container/list потокоНЕбезопасен
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	// добавлем задачу в конец очереди
@@ -90,8 +91,9 @@ func (p *Pool) RunBackground(ctx context.Context) {
 			p.wg.Done()
 			return
 		default:
-			// если очередь не пустая, берем из нее задачу и отправляем в канал воркеров
+			// container/list потокоНЕбезопасен
 			p.mu.Lock()
+			// если очередь не пустая, берем из нее задачу и отправляем в канал воркеров
 			if lenQ := p.TasksQ.Len(); lenQ > 0 {
 				// удалем элемент из очереди с получением его значения и приведением его к типу models.Task с делаьнейшей передачей в канал
 				p.collector <- p.TasksQ.Remove(p.TasksQ.Front()).(models.Task)
