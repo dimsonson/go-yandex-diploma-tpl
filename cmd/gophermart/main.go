@@ -2,9 +2,9 @@
 package main
 
 import (
+	"container/list"
 	"context"
 	"flag"
-	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,11 +16,9 @@ import (
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/httprequest"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/httprouter"
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/storage"
-	"github.com/gammazero/deque"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/shopspring/decimal"
@@ -48,7 +46,6 @@ func main() {
 		return
 	}
 	BaseUrl.Path = "/api/orders"
-	fmt.Println("BaseUrl", BaseUrl)
 	// инициализируем конструкторы
 	// конструкторы хранилища
 	storage := newStrorageProvider(dlink)
@@ -57,13 +54,14 @@ func main() {
 	// создаем тикер для обработки задач из очереди
 	ticker := time.NewTicker(settings.RequestsTimeout)
 	// создаем очередь для задач воркер пула апдейта статусов заказов
-	queue := deque.New[models.Task]()
+	//queue := deque.New[models.Task]()
+	queue := list.New()
 	// опередяляем контекст уведомления о сигнале прерывания
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	// создаем группу синхранизации выполнения горутин
 	var wg sync.WaitGroup
 	// создаем воркер пул для обработки задач очереди
-	pool := workerpool.NewPool(*queue, settings.WorkersQty, ticker, storage, calcSys, &wg, httpReq)
+	pool := workerpool.NewPool(queue, settings.WorkersQty, ticker, storage, calcSys, &wg, httpReq)
 	// конструкторы структур User
 	serviceUser := services.NewUserService(storage)
 	handlerUser := handlers.NewUserHandler(serviceUser)

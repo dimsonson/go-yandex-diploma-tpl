@@ -2,6 +2,7 @@
 package workerpool
 
 import (
+	"container/list"
 	"context"
 	"net/http"
 	"sync"
@@ -9,13 +10,14 @@ import (
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
-	"github.com/gammazero/deque"
+
+	//"github.com/gammazero/deque"
 	"github.com/rs/zerolog/log"
 )
 
 // структура пула воркеров
 type Pool struct {
-	TasksQ        deque.Deque[models.Task]
+	TasksQ        *list.List // deque.Deque[models.Task]
 	Workers       []*Worker
 	concurrency   int
 	collector     chan models.Task
@@ -29,6 +31,7 @@ type Pool struct {
 	httprequest   HttpRequestProvider
 }
 
+
 // NewTask - конструктор структуры задач для воркера
 func NewTask(orderNum string, Login string) *models.Task {
 	return &models.Task{
@@ -38,9 +41,9 @@ func NewTask(orderNum string, Login string) *models.Task {
 }
 
 // NewPool инициализирует новый пул с заданными задачами и при заданном параллелизме
-func NewPool(tasks deque.Deque[models.Task], concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string, wg *sync.WaitGroup, httprequest HttpRequestProvider) *Pool {
+func NewPool(tasks *list.List /*deque.Deque[models.Task]*/, concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string, wg *sync.WaitGroup, httprequest HttpRequestProvider) *Pool {
 	return &Pool{
-		TasksQ:      tasks,
+		TasksQ:      tasks, //list.New(),
 		concurrency: concurrency,
 		collector:   make(chan models.Task, settings.PipelineLenght),
 		timeout:     timeout,
@@ -53,6 +56,7 @@ func NewPool(tasks deque.Deque[models.Task], concurrency int, timeout *time.Tick
 
 // AppendTask добавляет задачи в pool
 func (p *Pool) AppendTask(login, orderNum string) {
+	// TaskQ:= list.New()
 	// создаем структуру для передачи в очередь пула воркеров
 	task := models.Task{
 		OrderNum: orderNum,
@@ -92,7 +96,11 @@ func (p *Pool) RunBackground(ctx context.Context) {
 			// если очередь не пустая, берем из нее задачу и отправляем в канал воркеров
 			p.mu.Lock()
 			if lenQ := p.TasksQ.Len(); lenQ > 0 {
-				p.collector <- p.TasksQ.PopFront()
+				// удалем элемент из очереди с получением его значения и приведением его к типу models.Task с делаьнейшей передачей в канал
+				p.collector <- p.TasksQ.Remove(p.TasksQ.Front()).(models.Task)
+				//f := p.TasksQ.Front() //.Value.(models.Task)
+				//element := p.TasksQ.Remove(p.TasksQ.Front()).(models.Task)
+				//element
 			}
 			p.mu.Unlock()
 		}
