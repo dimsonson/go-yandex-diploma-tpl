@@ -39,7 +39,7 @@ func NewTask(orderNum string, Login string) *models.Task {
 }
 
 // NewPool инициализирует новый пул с заданными задачами и при заданном параллелизме
-func NewPool(tasks *list.List /*deque.Deque[models.Task]*/, concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string, wg *sync.WaitGroup, httprequest HTTPRequestProvider) *Pool {
+func NewPool(tasks *list.List, concurrency int, timeout *time.Ticker, storage StorageProvider, calcSys string, wg *sync.WaitGroup, httprequest HTTPRequestProvider) *Pool {
 	return &Pool{
 		TasksQ:      tasks,
 		concurrency: concurrency,
