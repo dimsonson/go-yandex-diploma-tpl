@@ -96,7 +96,7 @@ func TestHandler_CheckAuthorization(t *testing.T) {
 		// определяем все тесты
 		{
 			name:                   "Positive test for user registration",
-			inputMetod:             "POST",
+			inputMetod:             http.MethodPost,
 			inputEndpoint:          "/api/user/register",
 			inputBody:              `{ "login": "dimma", "password": "12345" }`,
 			expectedStatusCode:     http.StatusOK,
@@ -105,21 +105,21 @@ func TestHandler_CheckAuthorization(t *testing.T) {
 		},
 		{
 			name:               "Negative test user registration - wrong JSON",
-			inputMetod:         "POST",
+			inputMetod:         http.MethodPost,
 			inputEndpoint:      "/api/user/register",
 			inputBody:          `{ "login": "dimma, "password": "12345" }`,
 			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name:               "Negative test user registration - login not exist",
-			inputMetod:         "POST",
+			inputMetod:         http.MethodPost,
 			inputEndpoint:      "/api/user/register",
 			inputBody:          `{ "login": "dimma3login", "password": "12345" }`,
 			expectedStatusCode: http.StatusUnauthorized,
 		},
 		{
 			name:               "Negative test user registration - server error",
-			inputMetod:         "POST",
+			inputMetod:         http.MethodPost,
 			inputEndpoint:      "/api/user/register",
 			inputBody:          `{ "login": "dimmaServErr", "password": "12345" }`,
 			expectedStatusCode: http.StatusInternalServerError,
