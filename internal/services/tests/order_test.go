@@ -3,9 +3,11 @@ package service__test
 import (
 	"context"
 	"errors"
+	"net/url"
 	"testing"
 	"time"
 
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/httprequest"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
@@ -34,7 +36,8 @@ func TestHandler_Load(t *testing.T) {
 	}
 
 	s := &storagemock.Order{}
-	svc := services.NewOrderService(s, nil, nil)
+	BaseURL, _ := url.Parse(settings.DefCalcSysURL)
+	svc := services.NewOrderService(s, nil, httprequest.NewHTTPRequst(BaseURL))
 
 	for _, tCase := range tests {
 		// запускаем каждый тест

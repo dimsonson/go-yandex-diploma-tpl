@@ -45,7 +45,7 @@ func (svc *OrderService) Load(ctx context.Context, login string, orderNum string
 	// проверка up and running внешнего сервиса
 	r, err := svc.httprequest.RequestGet("")
 	if err != nil {
-		log.Printf("remoute service request error (from OrderService Load): %s", err)
+		log.Printf("remote service request error (from OrderService Load): %s", err)
 		return err
 	}
 	r.Body.Close()
