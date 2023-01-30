@@ -88,7 +88,7 @@ func main() {
 	// запуск http сервера
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		// обработка ошибки запуска сервера
-		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
+		log.Printf("HTTP server ListenAndServe error: %v", err)
 	}
 	// остановка всех сущностей, куда передан контекст по прерыванию
 	stop()
