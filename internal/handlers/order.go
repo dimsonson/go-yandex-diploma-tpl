@@ -63,7 +63,7 @@ func (handler OrderHandler) Load(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	// получаем значение login из контекста запроса
+	// получаем значение claims из контекста запроса
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil {
 		log.Printf("FromContext error HandlerLoad: %s", err)
@@ -77,7 +77,7 @@ func (handler OrderHandler) Load(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "order handling error", http.StatusInternalServerError)
 		return
 	}
-	// проверяем пару логин:пароль в хранилище
+	// загружаем новмер нового заказа 
 	err = handler.service.Load(ctx, login, b)
 	// если ордер существует от этого пользователя - статус 200, если иная ошибка - 500
 	// если от другого пользователя - 409 // если нет ошибок - 202
@@ -116,7 +116,7 @@ func (handler OrderHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	// устанавливаем заголовок
 	w.Header().Set("Content-Type", "application/json")
-	// получаем слайс структур и ошибку
+	// направляем запрос в сервис, получаем слайс структур заказов и ошибку
 	ec, err := handler.service.List(ctx, login)
 	// 200 - при ошибке nil, 204 - при ошибке "no records for this login", 500 - при иных ошибках сервиса
 	switch {

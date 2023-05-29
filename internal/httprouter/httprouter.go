@@ -1,3 +1,4 @@
+// роутер запросов по эндпойнтам и обработчикам с подключением middleware 
 package httprouter
 
 import (
@@ -46,7 +47,9 @@ func NewRouter(userHandler *handlers.UserHandler, orderHandler *handlers.OrderHa
 		r.Post("/api/user/login", userHandler.CheckAuthorization)
 	})
 
+	// возврат ошибки 401 для неавторизованных запросов - jwtauth.Authenticator
 	// возврат ошибки 404 для всех остальных запросов - роутер chi
+
 	
 	return rout
 }

@@ -22,11 +22,11 @@ func (mst *Balance) Status(ctx context.Context, login string) (ec models.LoginBa
 }
 
 func (mst *Balance) NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
-	dc_corr := models.NewWithdrawal{
+	dcCorr := models.NewWithdrawal{
 		Order: "2377225624",
 		Sum:   decimal.NewFromFloatWithExponent(42, -2),
 	}
-	if dc.Sum.Equal(dc_corr.Sum) && dc.Order == dc_corr.Order {
+	if dc.Sum.Equal(dcCorr.Sum) && dc.Order == dcCorr.Order {
 		return nil
 	}
 	err = errors.New("something wrong woth server")

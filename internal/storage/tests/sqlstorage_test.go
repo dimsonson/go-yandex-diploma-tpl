@@ -1,3 +1,4 @@
+// тесты хранилища PostgreSQL
 package sqlstorage_test
 
 import (

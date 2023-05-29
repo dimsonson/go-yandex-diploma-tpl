@@ -1,3 +1,4 @@
+// настройки приложения
 package settings
 
 import (
@@ -32,6 +33,9 @@ const (
 
 // переменная ключа токена
 var TokenAuth *jwtauth.JWTAuth = jwtauth.New(string(jwa.HS256), []byte(SignKey), nil)
+
+// время жизни токена
+var TokenTTL = 30 * time.Minute
 
 // начальный таймаут для горутины запросов к сервису расчета баллов
 var RequestsTimeout = 800 * time.Millisecond

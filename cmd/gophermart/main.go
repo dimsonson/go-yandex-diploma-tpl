@@ -1,60 +1,73 @@
+// API Накопительная система лояльности «Гофермарт»
 package main
 
 import (
+	"container/list"
 	"context"
 	"flag"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/handlers"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/httprequest"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/httprouter"
-	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/services"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/storage"
-	"github.com/gammazero/deque"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/shopspring/decimal"
 
-	"github.com/dimsonson/go-yandex-diploma-tpl/cmd/gophermart/workerpool"
+	"github.com/dimsonson/go-yandex-diploma-tpl/internal/workerpool"
 )
 
 func init() {
+	// настройка обработки денежных единиц
 	decimal.MarshalJSONWithoutQuotes = true
 	decimal.DivisionPrecision = 2
 	decimal.ExpMaxIterations = 1000
+	// настройка логгирования
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "2006/01/02 15:04:05"})
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 }
 
 func main() {
-	// получаем переменные
+	// получаем переменные из флагов
 	dlink, calcSys, addr := flagsVars()
+	// создаем url для взаимодействия с внешней системой рассчета баллов
+	BaseURL, err := url.Parse(calcSys)
+	if err != nil {
+		log.Print("base url parsing error: ", settings.ColorRed, err, settings.ColorReset)
+		return
+	}
+	BaseURL.Path = "/api/orders"
 	// инициализируем конструкторы
 	// конструкторы хранилища
 	storage := newStrorageProvider(dlink)
 	defer storage.ConnectionClose()
-	// создаем тикер для воркер пула апдейта статусов заказов
+	httpReq := httprequest.NewHTTPRequst(BaseURL)
+	// создаем тикер для обработки задач из очереди
 	ticker := time.NewTicker(settings.RequestsTimeout)
 	// создаем очередь для задач воркер пула апдейта статусов заказов
-	queue := deque.New[models.Task]()
-	// опередяляем контекст с таймаутом
-	ctx, cancel := context.WithTimeout(context.Background(), settings.StorageTimeout)
-	// освобождаем ресурс
-	defer cancel()
-	// создаем воркер пул апдейта статусов заказов
-	pool := workerpool.NewPool(ctx, *queue, settings.WorkersQty, ticker, storage, calcSys)
-	// конструкторы интерфейса User
+	queue := list.New()
+	// опередяляем контекст уведомления о сигнале прерывания
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	// создаем группу синхранизации выполнения горутин
+	var wg sync.WaitGroup
+	// создаем воркер пул для обработки задач очереди
+	pool := workerpool.NewPool(queue, settings.WorkersQty, ticker, storage, calcSys, &wg, httpReq)
+	// конструкторы структур User
 	serviceUser := services.NewUserService(storage)
 	handlerUser := handlers.NewUserHandler(serviceUser)
-	//конструкторы интерфейса Order
-	serviceOrder := services.NewOrderService(storage, calcSys, pool)
+	//конструкторы структур Order
+	serviceOrder := services.NewOrderService(storage, pool, httpReq)
 	handlerOrder := handlers.NewOrderHandler(serviceOrder)
-	// конструкторы интерфейса Balance
+	// конструкторы структур Balance
 	serviceBalance := services.NewBalanceService(storage)
 	handlerBalance := handlers.NewBalanceHandler(serviceBalance)
 	// конструктор роутера
@@ -64,19 +77,28 @@ func main() {
 	log.Print("starting http server on: ", settings.ColorBlue, addr, settings.ColorReset)
 	// конфигурирование http сервера
 	srv := &http.Server{Addr: addr, Handler: r}
-	// канал остановки http сервера
-	idleConnsClosed := make(chan struct{})
-	// запуск http сервера ожидающего остановку
-	go httpServerStart(srv, pool, idleConnsClosed)
-	// запуск пула воркеров
-	go pool.RunBackground()
-	log.Print("ready to serve requests on " + addr)
-	// получение сигнала остановки сервера и пула
-	<-idleConnsClosed
-	log.Print("gracefully shutting down")
+	// добавляем счетчик горутины
+	wg.Add(1)
+	// запуск горутины shutdown http сервера
+	go httpServerShutdown(ctx, &wg, srv)
+	// добавляем счетчик горутины
+	wg.Add(1)
+	// запуск горутины пула воркеров
+	go pool.RunBackground(ctx)
+	// запуск http сервера
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		// обработка ошибки запуска сервера
+		log.Printf("HTTP server ListenAndServe error: %v", err)
+	}
+	// остановка всех сущностей, куда передан контекст по прерыванию
+	stop()
+	// ожидаем выполнение горутин
+	wg.Wait()
+	// логирование закрытия сервера без ошибок
+	log.Print("http server gracefully shutdown")
 }
 
-// парсинг флагов и валидация переменных окружения
+// flagsVars парсит флаги и валидирует переменные окружения
 func flagsVars() (dlink string, calcSys string, addr string) {
 	// описываем флаги
 	addrFlag := flag.String("a", settings.DefServAddr, "HTTP Server address")
@@ -105,37 +127,27 @@ func flagsVars() (dlink string, calcSys string, addr string) {
 	return dlink, calcSys, addr
 }
 
-// создание интерфейса хранилища
+// newStrorageProvider создает структуру хранилища
 func newStrorageProvider(dlink string) (s *storage.StorageSQL) {
 	// проверяем если переменная SQL url не пустая, логгируем
 	if dlink == "" {
 		log.Print("server may not properly start with "+settings.ColorRed+"database DSN empty", settings.ColorReset)
 	}
+	// создаем хранилище через конструктор
 	s = storage.NewSQLStorage(dlink)
 	log.Print("server will start with data storage "+settings.ColorYellow+"in PostgreSQL:", dlink, settings.ColorReset)
 	return s
 }
 
-// запуск и gracefull завершение ListenAndServe
-func httpServerStart(srv *http.Server, pool *workerpool.Pool, idleConnsClosed chan struct{}) {
-	go func() {
-		// канал инциализирущего сигнала остановки сервера и пула воркеров
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
-		// сигнал получен, останавливаем воркеры
-		pool.Stop()
-		// сигнал получен, останавливаем сервер
-		if err := srv.Shutdown(context.Background()); err != nil {
-			// обработа ошибки остановки сервера
-			log.Printf("HTTP server Shutdown error: %v", err)
-		}
-		// закрытие управляющего канала установки
-		close(idleConnsClosed)
-	}()
-	// запуск http сервера
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		// обработка ошибки запуска сервера
-		log.Fatal().Err(err).Msgf("HTTP server ListenAndServe error: %v", err)
+// httpServerShutdown реализует gracefull shutdown для ListenAndServe
+func httpServerShutdown(ctx context.Context, wg *sync.WaitGroup, srv *http.Server) {
+	// получаем сигнал о завершении приложения
+	<-ctx.Done()
+	// завершаем открытые соединения и закрываем http server
+	if err := srv.Shutdown(ctx); err != nil {
+		// логирование ошибки остановки сервера
+		log.Printf("HTTP server Shutdown error: %v", err)
 	}
+	// уменьшаем счетчик запущенных горутин
+	wg.Done()
 }

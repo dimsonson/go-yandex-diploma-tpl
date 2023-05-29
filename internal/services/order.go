@@ -2,9 +2,7 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 
@@ -21,49 +19,48 @@ type PoolProvider interface {
 	AppendTask(login, orderNum string)
 }
 
+type RequestProvider interface {
+	RequestGet(url string) (rsp *http.Response, err error)
+	RequestPost(orderNum string) (err error)
+}
+
 // структура конструктора бизнес логики Order
 type OrderService struct {
-	storage OrderStorageProvider
-	CalcSys string
-	pool    PoolProvider
+	storage     OrderStorageProvider
+	pool        PoolProvider
+	httprequest RequestProvider
 }
 
 // конструктор бизнес логики Order
-func NewOrderService(oStorage OrderStorageProvider, calcSys string, pool PoolProvider) *OrderService {
+func NewOrderService(orderStorage OrderStorageProvider, pool PoolProvider, httprequest RequestProvider) *OrderService {
 	return &OrderService{
-		oStorage,
-		calcSys,
+		orderStorage,
 		pool,
+		httprequest,
 	}
 }
 
 // сервис загрузки пользователем в систему начисления баллов номера нового заказа для расчёта
 func (svc *OrderService) Load(ctx context.Context, login string, orderNum string) (err error) {
 	// проверка up and running внешнего сервиса
-	rsp, err := http.Get(svc.CalcSys)
+	r, err := svc.httprequest.RequestGet("")
 	if err != nil {
-		log.Printf("remoute service error: %s", err)
-		return
+		log.Printf("remote service request error (from OrderService Load): %s", err)
+		return err
 	}
-	defer rsp.Body.Close()
+	r.Body.Close()
 	// запись нового заказа в хранилище
 	err = svc.storage.Load(ctx, login, orderNum)
 	if err != nil {
 		return err
 	}
-	// создание ссылки для запроса в систему начисления баллов
-	insertLink := svc.CalcSys + "/api/orders"
-	// создание JSON для запроса в систему начисления баллов
-	bodyJSON := fmt.Sprintf("{\"order\":\"%s\"}", orderNum)
 	// запрос регистрации заказа в системе расчета баллов
-	rPost, err := http.Post(insertLink, "application/json", strings.NewReader(bodyJSON))
+	err = svc.httprequest.RequestPost(orderNum)
 	if err != nil {
 		log.Printf("http Post request in ServiceNewOrderLoad error:%s", err)
 		return err
 	}
-	// освобождаем ресурс
-	defer rPost.Body.Close()
-	// отпарвляем запрос в пул
+	// отпарвляем запрос в пул воркеров для обработки
 	svc.pool.AppendTask(login, orderNum)
 	return err
 }

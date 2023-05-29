@@ -14,7 +14,7 @@ import (
 type BalanceServiceProvider struct {
 }
 
-// заглушка
+// заглушка Status
 func (mserv *BalanceServiceProvider) Status(ctx context.Context, login string) (ec models.LoginBalance, err error) {
 	switch login {
 
@@ -32,7 +32,7 @@ func (mserv *BalanceServiceProvider) Status(ctx context.Context, login string) (
 
 }
 
-// заглушка
+// заглушка NewWithdrawal
 func (mserv *BalanceServiceProvider) NewWithdrawal(ctx context.Context, login string, dc models.NewWithdrawal) (err error) {
 
 	switch {
@@ -49,6 +49,7 @@ func (mserv *BalanceServiceProvider) NewWithdrawal(ctx context.Context, login st
 
 }
 
+// заглушка WithdrawalsList
 func (mserv *BalanceServiceProvider) WithdrawalsList(ctx context.Context, login string) (ec []models.WithdrawalsList, err error) {
 	ec = []models.WithdrawalsList{
 		{

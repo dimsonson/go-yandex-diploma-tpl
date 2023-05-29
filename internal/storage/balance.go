@@ -48,7 +48,7 @@ func (ms *StorageSQL) NewWithdrawal(ctx context.Context, login string, dc models
 			}
 			return err
 		}
-		// проверяем наличие сресдтв для списания
+		// проверяем наличие сресдтв для списания, если недостаточно, возвращаем ошибку "insufficient funds"
 		if dc.Sum.GreaterThan(balanceCurrent) {
 			err = errors.New("insufficient funds")
 			log.Printf("error StorageNewWithdrawal : %s", err)
@@ -84,7 +84,7 @@ func (ms *StorageSQL) NewWithdrawal(ctx context.Context, login string, dc models
 			q := `INSERT INTO withdrawals (new_order, login, "sum") VALUES ($1, $2, $3)`
 			// записываем в хранилице login, passwHex
 			_, err := ms.PostgreSQL.Exec(q, dc.Order, login, dc.Sum)
-			// логируем и возвращаем соответствующую ошибку
+			// логируем и возвращаем соответствующую ошибку "new order number already exist"
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 				log.Printf("error StorageNewWithdrawal : %s", err)

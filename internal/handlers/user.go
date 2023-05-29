@@ -1,3 +1,4 @@
+// пакет обработчиков запросов
 package handlers
 
 import (
@@ -8,6 +9,7 @@ import (
 
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/models"
 	"github.com/dimsonson/go-yandex-diploma-tpl/internal/settings"
+	"github.com/go-chi/jwtauth/v5"
 
 	"github.com/rs/zerolog/log"
 )
@@ -54,6 +56,9 @@ func (handler UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		// создаем токен
+		claims := map[string]interface{}{"login": dc.Login}
+		// устанавливаем время жизни токена
+		jwtauth.SetExpiryIn(claims, settings.TokenTTL)
 		_, tokenString, err := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
 		if err != nil {
 			log.Printf("tokenAuth.Encode error HandlerCreate: %s", err)
@@ -91,7 +96,10 @@ func (handler UserHandler) CheckAuthorization(w http.ResponseWriter, r *http.Req
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
 		// создаем токен
-		_, tokenString, err := settings.TokenAuth.Encode(map[string]interface{}{"login": dc.Login})
+		claims := map[string]interface{}{"login": dc.Login}
+		// устанавливаем время жизни токена
+		jwtauth.SetExpiryIn(claims, settings.TokenTTL)
+		_, tokenString, err := settings.TokenAuth.Encode(claims)
 		if err != nil {
 			log.Printf("tokenAuth.Encode error HandlerCheckAuthorization: %s", err)
 			http.Error(w, "login handling error", http.StatusInternalServerError)
